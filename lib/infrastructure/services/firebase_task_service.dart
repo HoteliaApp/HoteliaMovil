@@ -131,8 +131,14 @@ class FirebaseTaskService {
     int priority = 3,
   }) async {
     final taskId = 'task-${DateTime.now().millisecondsSinceEpoch}';
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown_user';
-    
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUserId = currentUser?.uid ?? 'unknown_user';
+
+    // Nombre legible: displayName → parte del email → UID truncado
+    final assignedByName = currentUser?.displayName?.isNotEmpty == true
+        ? currentUser!.displayName!
+        : currentUser?.email?.split('@').first ?? 'Recepción';
+
     await _firestore.collection('tasks').doc(taskId).set({
       'id': taskId,
       'roomId': roomId,
@@ -142,6 +148,7 @@ class FirebaseTaskService {
       'description': description,
       'guestName': guestName,
       'assignedBy': currentUserId,
+      'assignedByName': assignedByName, // ← nombre legible para la Smart TV
       'createdAt': DateTime.now().toIso8601String(),
       'completedAt': null,
       'priority': priority,
