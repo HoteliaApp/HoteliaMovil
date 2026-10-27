@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
-import 'package:hotel_app/infrastructure/services/firebase_task_service.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
+import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
 
 class SendAlertDialog extends ConsumerStatefulWidget {
   const SendAlertDialog({super.key});
@@ -47,9 +47,9 @@ class _SendAlertDialogState extends ConsumerState<SendAlertDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      final taskService = ref.read(firebaseTaskServiceProvider);
+      final taskRepo = ref.read(taskRepositoryProvider);
       
-      await taskService.createManualAlert(
+      await taskRepo.createManualAlert(
         roomId: _selectedRoomId!,
         roomNumber: roomNumber,
         taskType: _selectedTaskType,

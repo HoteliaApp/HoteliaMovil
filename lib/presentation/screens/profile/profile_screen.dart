@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/entities/user.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hotel_app/presentation/providers/admin/employees_provider.dart';
 import 'dart:math';
 
 class ProfileScreen extends ConsumerWidget {
@@ -86,12 +86,10 @@ class ProfileScreen extends ConsumerWidget {
                           final pin = (1000 + Random().nextInt(9000)).toString();
                           
                           try {
-                            // Guardar en Firestore
-                            await FirebaseFirestore.instance.collection('users').doc(userId).set({
-                              'wearablePin': pin,
-                              'pinCreatedAt': FieldValue.serverTimestamp(),
-                              'wearableLinkedAt': FieldValue.serverTimestamp(),
-                            }, SetOptions(merge: true));
+                            // Guardar mediante el repositorio
+                            await ref
+                                .read(employeesRepositoryProvider)
+                                .linkWearablePin(userId, pin);
                             
                             // Mostrar PIN al usuario
                             if (context.mounted) {
