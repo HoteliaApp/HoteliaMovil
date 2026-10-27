@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/infrastructure/infraestructure.dart';
-import 'package:hotel_app/infrastructure/services/firebase_task_service.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/providers/dashboard/dashboard_provider.dart';
 import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
@@ -61,7 +60,7 @@ class CheckInOutNotifier extends Notifier<CheckInOutState> {
 
   RoomsRepository get _roomsRepo => ref.read(roomsRepositoryProvider);
 
-  FirebaseTaskService get _taskService => ref.read(firebaseTaskServiceProvider);
+  TaskRepository get _taskRepo => ref.read(taskRepositoryProvider);
 
   /// Invalida todos los providers afectados por un cambio de estado.
   void _invalidateAll() {
@@ -158,8 +157,8 @@ class CheckInOutNotifier extends Notifier<CheckInOutState> {
       // 3. Actualiza el estado de la habitación a "Pendiente Limpieza"
       await _roomsRepo.updateRoomStatus(roomId, RoomStatus.pendingCleaning);
 
-      // 4. Publica tarea de limpieza en Firestore → el wearable la recibe
-      await _taskService.createCleaningTask(
+      // 4. Publica tarea de limpieza en el repositorio → el wearable la recibe
+      await _taskRepo.createCleaningTask(
         roomId: roomId,
         roomNumber: room.roomNumber,
         guestName: guestName,

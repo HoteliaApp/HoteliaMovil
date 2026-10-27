@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
-import 'package:hotel_app/domain/entities/user.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/dashboard/dashboard_provider.dart';
 import 'package:hotel_app/presentation/widgets/dashboard/tasks_panel_widget.dart';

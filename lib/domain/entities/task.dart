@@ -28,65 +28,98 @@ enum TaskPriority {
       };
 }
 
+/// Entidad de dominio que representa una tarea del hotel.
 class Task {
   final String id;
-  final String title;
+  final String roomId;
+  final int roomNumber;
+  final String taskType;
+  final String status;
   final String description;
-  final String? roomId;
-  final String? assignedTo;
-  final TaskStatus status;
-  final TaskPriority priority;
+  final String guestName;
+  final String assignedBy;
+  final String? assignedByName;
   final DateTime createdAt;
   final DateTime? completedAt;
+  final int priority;
 
   const Task({
     required this.id,
-    required this.title,
-    required this.description,
-    this.roomId,
-    this.assignedTo,
+    required this.roomId,
+    required this.roomNumber,
+    required this.taskType,
     required this.status,
-    required this.priority,
+    required this.description,
+    required this.guestName,
+    required this.assignedBy,
+    this.assignedByName,
     required this.createdAt,
     this.completedAt,
+    this.priority = 3,
   });
 
-  /// Retorna true si la tarea está pendiente o en progreso
-  bool get isActive =>
-      status == TaskStatus.pending || status == TaskStatus.inProgress;
+  /// Etiqueta legible del tipo de tarea (compatible con WearTaskType)
+  String get taskTypeLabel => switch (taskType) {
+        'cleaning' => 'Limpieza',
+        'maintenance' => 'Mantenimiento',
+        'inspection' => 'Inspección',
+        'delivery' => 'Entrega',
+        'guest_request' => 'Solicitud de huésped',
+        _ => taskType,
+      };
 
-  /// Retorna true si la tarea es urgente o de alta prioridad
-  bool get isHighPriority =>
-      priority == TaskPriority.high || priority == TaskPriority.urgent;
+  /// Etiqueta legible del estado
+  String get statusLabel => switch (status) {
+        'pending' => 'Pendiente',
+        'inProgress' => 'En progreso',
+        'completed' => 'Completada',
+        'cancelled' => 'Cancelada',
+        _ => status,
+      };
+
+  /// Tiempo transcurrido desde que se creó la tarea
+  Duration get elapsedTime => DateTime.now().difference(createdAt);
+
+  /// Retorna true si la tarea está activa (pendiente o en progreso)
+  bool get isActive => status == 'pending' || status == 'inProgress';
+
+  /// Retorna true si la tarea es de alta prioridad
+  bool get isHighPriority => priority >= 4;
 
   /// Crea una copia de la entidad con los campos modificados
   Task copyWith({
     String? id,
-    String? title,
-    String? description,
     String? roomId,
-    String? assignedTo,
-    TaskStatus? status,
-    TaskPriority? priority,
+    int? roomNumber,
+    String? taskType,
+    String? status,
+    String? description,
+    String? guestName,
+    String? assignedBy,
+    String? assignedByName,
     DateTime? createdAt,
     DateTime? completedAt,
+    int? priority,
   }) {
     return Task(
       id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
       roomId: roomId ?? this.roomId,
-      assignedTo: assignedTo ?? this.assignedTo,
+      roomNumber: roomNumber ?? this.roomNumber,
+      taskType: taskType ?? this.taskType,
       status: status ?? this.status,
-      priority: priority ?? this.priority,
+      description: description ?? this.description,
+      guestName: guestName ?? this.guestName,
+      assignedBy: assignedBy ?? this.assignedBy,
+      assignedByName: assignedByName ?? this.assignedByName,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
+      priority: priority ?? this.priority,
     );
   }
 
   @override
   String toString() =>
-      'Task(id: $id, title: $title, status: ${status.label}, priority: ${priority.label})';
+      'Task(id: $id, roomNumber: $roomNumber, type: $taskTypeLabel, status: $statusLabel)';
 
   @override
   bool operator ==(Object other) =>
@@ -95,3 +128,6 @@ class Task {
   @override
   int get hashCode => id.hashCode;
 }
+
+/// Alias para mantener retrocompatibilidad con código existente
+typedef HotelTask = Task;
