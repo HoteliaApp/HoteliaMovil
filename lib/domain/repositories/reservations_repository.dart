@@ -13,6 +13,13 @@ abstract class ReservationsRepository {
   /// Obtiene el detalle de una reservación por su [id].
   Future<Reservation> getReservationById(String id);
 
+  /// Verifica si una habitación tiene alguna reservación activa empalmada con las fechas dadas.
+  Future<Reservation?> getOverlappingReservation({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  });
+
   /// Crea una nueva reservación.
   Future<Reservation> createReservation(CreateReservationParams params);
 

@@ -73,6 +73,43 @@ class ReservationsNotifier extends Notifier<ReservationsState> {
     await loadReservations();
   }
 
+  /// Verifica si una habitación tiene conflicto de fechas en el listado cargado en memoria.
+  Reservation? findOverlappingReservation({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  }) {
+    final start = DateTime(checkIn.year, checkIn.month, checkIn.day);
+    final end = DateTime(checkOut.year, checkOut.month, checkOut.day);
+
+    for (final r in state.reservations) {
+      if (r.roomId == roomId &&
+          r.status != ReservationStatus.cancelled &&
+          r.status != ReservationStatus.completed) {
+        final rStart = DateTime(r.checkIn.year, r.checkIn.month, r.checkIn.day);
+        final rEnd = DateTime(r.checkOut.year, r.checkOut.month, r.checkOut.day);
+
+        if (start.isBefore(rEnd) && end.isAfter(rStart)) {
+          return r;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Consulta al repositorio si existe alguna reservación empalmada en la base de datos.
+  Future<Reservation?> checkOverlappingInRepository({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  }) async {
+    return _repository.getOverlappingReservation(
+      roomId: roomId,
+      checkIn: checkIn,
+      checkOut: checkOut,
+    );
+  }
+
   /// Crea una nueva reservación
   Future<bool> createReservation(CreateReservationParams params) async {
     state = state.copyWith(isLoading: true, clearError: true);
