@@ -63,21 +63,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated) {
         final role = authState.role;
 
-        // Verificar estado pendiente o inactivo/rechazado
-        if (status?.name != 'active' && location != AppRoutes.pending) {
-          return AppRoutes.pending;
+        // Si el usuario no está activo (pending, rejected, inactive), bloquear acceso
+        if (status != UserStatus.active) {
+          if (location != AppRoutes.pending) {
+            return AppRoutes.pending;
+          }
+          return null; // permanece en pending-approval
         }
-        
-        if (status?.name == 'active' && location == AppRoutes.pending) {
+
+        // Si el usuario ya está activo y se encuentra en pending-approval o ruta pública
+        if (status == UserStatus.active && (location == AppRoutes.pending || isPublic)) {
           return AppRoutes.dashboard;
         }
 
-        if (status?.name == 'active' && isPublic) {
-          return AppRoutes.dashboard;
-        }
-
-        // GUARDAS POR ROL
-        if (status?.name == 'active') {
+        // GUARDAS POR ROL para usuarios activos
+        if (status == UserStatus.active) {
           // Solo el gerente puede acceder a admin
           if (location.startsWith('/admin') && role != UserRole.admin) {
             return AppRoutes.dashboard;
@@ -98,9 +98,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     },
   );
 
-  // Escucha cambios de authProvider para refrescar el router
+  // Escucha cambios de authProvider (autenticación, estado o rol) para refrescar el router
   ref.listen(authProvider, (previous, next) {
-    if (previous?.isAuthenticated != next.isAuthenticated) {
+    final authChanged = previous?.isAuthenticated != next.isAuthenticated;
+    final statusChanged = previous?.status != next.status;
+    final roleChanged = previous?.role != next.role;
+
+    if (authChanged || statusChanged || roleChanged) {
       router.refresh();
     }
   });
