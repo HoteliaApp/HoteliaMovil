@@ -21,6 +21,19 @@ class ReservationsRepositoryImpl implements ReservationsRepository {
   }
 
   @override
+  Future<Reservation?> getOverlappingReservation({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  }) {
+    return _dataSource.getOverlappingReservation(
+      roomId: roomId,
+      checkIn: checkIn,
+      checkOut: checkOut,
+    );
+  }
+
+  @override
   Future<Reservation> createReservation(CreateReservationParams params) {
     return _dataSource.createReservation(params);
   }

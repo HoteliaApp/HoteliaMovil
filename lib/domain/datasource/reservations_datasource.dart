@@ -7,6 +7,7 @@ class CreateReservationParams {
   final String guestName;
   final DateTime checkIn;
   final DateTime checkOut;
+  final double total;
   final String? notes;
 
   const CreateReservationParams({
@@ -15,6 +16,7 @@ class CreateReservationParams {
     required this.guestName,
     required this.checkIn,
     required this.checkOut,
+    this.total = 0.0,
     this.notes,
   });
 }
@@ -31,6 +33,14 @@ abstract class ReservationsDataSource {
 
   /// Obtiene el detalle de una reservación por su [id].
   Future<Reservation> getReservationById(String id);
+
+  /// Verifica si una habitación tiene alguna reservación activa empalmada con las fechas dadas.
+  /// Retorna la primera [Reservation] que genera conflicto, o null si no hay empalme.
+  Future<Reservation?> getOverlappingReservation({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  });
 
   /// Crea una nueva reservación con los [params] proporcionados.
   Future<Reservation> createReservation(CreateReservationParams params);

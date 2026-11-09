@@ -55,17 +55,71 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   }
 
   @override
-  Future<Reservation> createReservation(CreateReservationParams params) async {
+  Future<Reservation?> getOverlappingReservation({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  }) async {
     try {
-      // Validar que el cuarto no tenga una reservación activa
       final activeQuery = await _reservations
-          .where('roomId', isEqualTo: params.roomId)
+          .where('roomId', isEqualTo: roomId)
           .where('status', whereIn: ['confirmed', 'checkedIn', 'newReservation'])
-          .limit(1)
           .get();
 
-      if (activeQuery.docs.isNotEmpty) {
-        throw Exception('La habitaci\u00f3n ya tiene una reservaci\u00f3n activa. Elige otra habitaci\u00f3n.');
+      final newIn = DateTime(checkIn.year, checkIn.month, checkIn.day);
+      final newOut = DateTime(checkOut.year, checkOut.month, checkOut.day);
+
+      for (final doc in activeQuery.docs) {
+        final data = doc.data();
+        final checkInRaw = data['checkIn'] ?? data['check_in'];
+        final checkOutRaw = data['checkOut'] ?? data['check_out'];
+
+        if (checkInRaw != null && checkOutRaw != null) {
+          final existInRaw = checkInRaw is Timestamp
+              ? checkInRaw.toDate()
+              : DateTime.parse(checkInRaw.toString());
+          final existOutRaw = checkOutRaw is Timestamp
+              ? checkOutRaw.toDate()
+              : DateTime.parse(checkOutRaw.toString());
+
+          final existIn = DateTime(existInRaw.year, existInRaw.month, existInRaw.day);
+          final existOut = DateTime(existOutRaw.year, existOutRaw.month, existOutRaw.day);
+
+          // Fechas empalmadas: newIn < existOut && newOut > existIn
+          if (newIn.isBefore(existOut) && newOut.isAfter(existIn)) {
+            data['id'] = doc.id;
+            return ReservationMapper.fromJson(data);
+          }
+        }
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Error al validar fechas de reservación: $e');
+    }
+  }
+
+  @override
+  Future<Reservation> createReservation(CreateReservationParams params) async {
+    try {
+      final newIn = DateTime(params.checkIn.year, params.checkIn.month, params.checkIn.day);
+      final newOut = DateTime(params.checkOut.year, params.checkOut.month, params.checkOut.day);
+
+      if (!newOut.isAfter(newIn)) {
+        throw Exception('La fecha de check-out debe ser posterior a la fecha de check-in.');
+      }
+
+      // Validar contra la colección /reservations antes de escribir
+      final conflict = await getOverlappingReservation(
+        roomId: params.roomId,
+        checkIn: params.checkIn,
+        checkOut: params.checkOut,
+      );
+
+      if (conflict != null) {
+        final inStr = '${conflict.checkIn.day.toString().padLeft(2, '0')}/${conflict.checkIn.month.toString().padLeft(2, '0')}';
+        final outStr = '${conflict.checkOut.day.toString().padLeft(2, '0')}/${conflict.checkOut.month.toString().padLeft(2, '0')}';
+        throw Exception('La habitación ya está reservada del $inStr al $outStr. Fechas empalmadas.');
       }
 
       final docRef = _reservations.doc();
@@ -78,7 +132,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
         checkOut: params.checkOut,
         companions: 0, // Por defecto en la creación
         status: ReservationStatus.confirmed.name, // Confirmada directamente
-        total: 0.0, // Se calcularía en backend/cloud function
+        total: params.total,
         createdAt: DateTime.now(),
         notes: params.notes,
       );
@@ -86,6 +140,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
       await docRef.set(reservation.toJson());
       return reservation.toEntity();
     } catch (e) {
+      if (e is Exception) rethrow;
       throw Exception('Error al crear reservación: $e');
     }
   }
