@@ -11,7 +11,7 @@ import 'package:hotel_app/infrastructure/infraestructure.dart';
 final roomsDataSourceProvider = Provider<RoomsDataSource>((ref) {
   final dataSource = RoomsDataSourceImpl(FirebaseFirestore.instance);
   // Se siembran los cuartos de manera asíncrona (fuego y olvido)
-  dataSource.seedRoomsIfEmpty();
+  dataSource.seedRoomsIfEmpty().catchError((_) {});
   return dataSource;
 });
 
