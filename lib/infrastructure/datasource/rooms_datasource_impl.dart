@@ -61,6 +61,26 @@ class RoomsDataSourceImpl implements RoomsDataSource {
     }
   }
 
+  @override
+  Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) {
+    Query<Map<String, dynamic>> query = _rooms;
+
+    if (status != null) {
+      query = query.where('status', isEqualTo: status.name);
+    }
+    if (type != null) {
+      query = query.where('roomType', isEqualTo: type.name);
+    }
+
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return RoomMapper.fromJson(data);
+      }).toList();
+    });
+  }
+
   /// Método para poblar la base de datos con cuartos fijos si está vacía
   Future<void> seedRoomsIfEmpty() async {
     final snapshot = await _rooms.limit(1).get();

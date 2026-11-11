@@ -21,6 +21,10 @@ class FakeRoomsRepository implements RoomsRepository {
   @override
   Future<Room> updateRoomStatus(String id, RoomStatus newStatus) async =>
       rooms.firstWhere((r) => r.id == id);
+
+  @override
+  Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) =>
+      Stream.value(rooms);
 }
 
 class FakeReservationsRepository implements ReservationsRepository {

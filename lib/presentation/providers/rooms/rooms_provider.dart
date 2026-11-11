@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/infrastructure/infraestructure.dart';
@@ -70,79 +69,96 @@ class RoomsState {
 class RoomsNotifier extends Notifier<RoomsState> {
   @override
   RoomsState build() {
-    // Carga inicial al construirse
-    Future.microtask(loadRooms);
-    return const RoomsState();
+    // Suscribe al stream reactivo al construirse; cancela automáticamente
+    // cuando el provider se descarte.
+    _subscribeToStream();
+    return const RoomsState(isLoading: true);
   }
 
   RoomsRepository get _repository => ref.read(roomsRepositoryProvider);
 
-  /// Carga la lista de habitaciones aplicando filtros activos
-  Future<void> loadRooms() async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      var rooms = await _repository.getRooms(
-        status: state.selectedStatus,
-        type: state.selectedType,
-      );
-      // Filtro de capacidad aplicado en cliente
-      if (state.selectedCapacity != null) {
-        rooms = rooms
-            .where((r) => r.capacity >= state.selectedCapacity!)
-            .toList();
-      }
-      state = state.copyWith(rooms: rooms, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
-      );
-    }
+  /// Suscripción activa al stream de Firestore
+  void _subscribeToStream() {
+    final stream = _repository.watchRooms(
+      status: state.selectedStatus,
+      type: state.selectedType,
+    );
+
+    // ref.onDispose cancela la suscripción cuando el provider muere
+    final subscription = stream.listen(
+      (rooms) {
+        final filtered = state.selectedCapacity != null
+            ? rooms.where((r) => r.capacity >= state.selectedCapacity!).toList()
+            : rooms;
+        state = state.copyWith(rooms: filtered, isLoading: false, clearError: true);
+      },
+      onError: (Object e) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        );
+      },
+    );
+
+    ref.onDispose(subscription.cancel);
   }
 
-  /// Cambia el filtro de estado y recarga
+  /// Re-suscribe al stream aplicando los filtros activos del estado
+  void _resubscribe() {
+    // Reinicia la carga y vuelve a suscribirse con los nuevos filtros
+    state = state.copyWith(isLoading: true, clearError: true);
+    _subscribeToStream();
+  }
+
+  /// Refresco manual (Pull-to-refresh): fuerza re-suscripción
+  Future<void> loadRooms() async {
+    _resubscribe();
+  }
+
+  /// Cambia el filtro de estado y re-suscribe
   Future<void> filterByStatus(RoomStatus? status) async {
     state = state.copyWith(
       selectedStatus: status,
       clearStatus: status == null,
     );
-    await loadRooms();
+    _resubscribe();
   }
 
-  /// Cambia el filtro de tipo y recarga
+  /// Cambia el filtro de tipo y re-suscribe
   Future<void> filterByType(RoomType? type) async {
     state = state.copyWith(
       selectedType: type,
       clearType: type == null,
     );
-    await loadRooms();
+    _resubscribe();
   }
 
-  /// Limpia todos los filtros y recarga
+  /// Limpia todos los filtros y re-suscribe
   Future<void> clearFilters() async {
-    state = state.copyWith(
-        clearStatus: true, clearType: true, clearCapacity: true);
-    await loadRooms();
+    state = state.copyWith(clearStatus: true, clearType: true, clearCapacity: true);
+    _resubscribe();
   }
 
-  /// Cambia el filtro de capacidad mínima y recarga
+  /// Cambia el filtro de capacidad mínima.
+  /// El filtro de capacidad se aplica en cliente sobre el stream actual,
+  /// por lo que no requiere re-suscripción, solo actualizar el estado.
   Future<void> filterByCapacity(int? capacity) async {
     state = state.copyWith(
       selectedCapacity: capacity,
       clearCapacity: capacity == null,
     );
-    await loadRooms();
+    // Re-suscribimos para que el listener aplique el nuevo filtro de capacidad
+    _resubscribe();
   }
 
-  /// Actualiza el estado de una habitación
+  /// Actualiza el estado de una habitación directamente en Firestore.
+  /// El stream se encargará de reflejar el cambio automáticamente.
   Future<void> updateRoomStatus(String roomId, RoomStatus status) async {
-    state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _repository.updateRoomStatus(roomId, status);
-      await loadRooms();
+      // No necesitamos recargar manualmente: Firestore notificará al stream
     } catch (e) {
       state = state.copyWith(
-        isLoading: false,
         errorMessage: e.toString().replaceFirst('Exception: ', ''),
       );
     }

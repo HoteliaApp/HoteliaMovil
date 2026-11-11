@@ -21,4 +21,9 @@ class RoomsRepositoryImpl implements RoomsRepository {
   Future<Room> updateRoomStatus(String id, RoomStatus newStatus) {
     return _dataSource.updateRoomStatus(id, newStatus);
   }
+
+  @override
+  Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) {
+    return _dataSource.watchRooms(status: status, type: type);
+  }
 }
