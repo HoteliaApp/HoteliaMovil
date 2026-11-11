@@ -30,6 +30,8 @@ enum TaskPriority {
 
 /// Entidad de dominio que representa una tarea del hotel.
 class Task {
+  static const int schemaVersion = 1;
+
   final String id;
   final String roomId;
   final int roomNumber;
@@ -39,9 +41,17 @@ class Task {
   final String guestName;
   final String assignedBy;
   final String? assignedByName;
+
+  /// UID del operario asignado. `null` significa sin asignar: la tarea es
+  /// visible para todo el personal operativo.
+  final String? assignedTo;
+
   final DateTime createdAt;
   final DateTime? completedAt;
   final int priority;
+
+  /// Observaciones capturadas por el operario desde el reloj al completar.
+  final String? notes;
 
   const Task({
     required this.id,
@@ -53,9 +63,11 @@ class Task {
     required this.guestName,
     required this.assignedBy,
     this.assignedByName,
+    this.assignedTo,
     required this.createdAt,
     this.completedAt,
-    this.priority = 3,
+    this.priority = 3,  
+    this.notes,
   });
 
   /// Etiqueta legible del tipo de tarea (compatible con WearTaskType)
@@ -77,6 +89,16 @@ class Task {
         _ => status,
       };
 
+  /// Severidad derivada de [priority], según la tabla de correspondencia del
+  /// contrato de datos. Es el valor que se escribe en el campo `severity` de
+  /// la colección `/alerts`.
+  String get severity => switch (priority) {
+        5 => 'urgent',
+        4 => 'high',
+        3 => 'medium',
+        _ => 'low',
+      };
+
   /// Tiempo transcurrido desde que se creó la tarea
   Duration get elapsedTime => DateTime.now().difference(createdAt);
 
@@ -85,6 +107,9 @@ class Task {
 
   /// Retorna true si la tarea es de alta prioridad
   bool get isHighPriority => priority >= 4;
+
+  /// Retorna true si la tarea está asignada a un operario concreto.
+  bool get isAssigned => assignedTo != null && assignedTo!.isNotEmpty;
 
   /// Crea una copia de la entidad con los campos modificados
   Task copyWith({
@@ -97,9 +122,11 @@ class Task {
     String? guestName,
     String? assignedBy,
     String? assignedByName,
+    String? assignedTo,
     DateTime? createdAt,
     DateTime? completedAt,
     int? priority,
+    String? notes,
   }) {
     return Task(
       id: id ?? this.id,
@@ -111,9 +138,11 @@ class Task {
       guestName: guestName ?? this.guestName,
       assignedBy: assignedBy ?? this.assignedBy,
       assignedByName: assignedByName ?? this.assignedByName,
+      assignedTo: assignedTo ?? this.assignedTo,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       priority: priority ?? this.priority,
+      notes: notes ?? this.notes,
     );
   }
 

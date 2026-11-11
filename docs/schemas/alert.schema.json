@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hotelia.app/schemas/v1/alert.schema.json",
+  "title": "Hotelia Alert",
+  "description": "Documento de la colección /alerts de Cloud Firestore. Avisos que recepción envía al smartwatch y que la Smart TV muestra en su panel superior. Toda alerta acompaña a una tarea de /tasks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "taskId",
+    "title",
+    "message",
+    "severity",
+    "priority",
+    "roomId",
+    "roomNumber",
+    "assignedBy",
+    "assignedByName",
+    "createdAt",
+    "isAcknowledged",
+    "acknowledgedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificador de la alerta. Idéntico al id del documento de Firestore.",
+      "examples": ["alert-1763000000000"]
+    },
+    "taskId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id de la tarea asociada en /tasks.",
+      "examples": ["task-1763000000000"]
+    },
+    "title": {
+      "type": "string",
+      "description": "Encabezado corto de la alerta.",
+      "examples": ["Mantenimiento — Hab. 201"]
+    },
+    "message": {
+      "type": "string",
+      "description": "Cuerpo del aviso.",
+      "examples": ["Hab. 201: fuga en el lavabo"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "urgent"],
+      "description": "Severidad derivada de priority: 1-2 low, 3 medium, 4 high, 5 urgent."
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Urgencia. Debe coincidir con la priority de la tarea asociada."
+    },
+    "roomId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id del documento de la habitación en /rooms.",
+      "examples": ["room-201"]
+    },
+    "roomNumber": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Número físico de la habitación. Nunca debe recibir el valor de roomId.",
+      "examples": [201]
+    },
+    "assignedBy": {
+      "type": "string",
+      "description": "UID de Firebase Auth de quien generó la alerta."
+    },
+    "assignedByName": {
+      "type": "string",
+      "description": "Nombre legible de quien generó la alerta."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha de creación en ISO 8601 UTC."
+    },
+    "isAcknowledged": {
+      "type": "boolean",
+      "description": "true cuando el smartwatch marca la alerta como recibida."
+    },
+    "acknowledgedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Fecha en que se reconoció, en ISO 8601 UTC. null mientras isAcknowledged sea false."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Versión del contrato con el que se escribió este documento."
+    }
+  }
+}
