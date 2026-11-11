@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hotelia.app/schemas/v1/task.schema.json",
+  "title": "Hotelia Task",
+  "description": "Documento de la colección /tasks de Cloud Firestore. Canal de comunicación entre la app móvil (escritura), el smartwatch (lectura y avance de estado) y la Smart TV (lectura).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "roomId",
+    "roomNumber",
+    "taskType",
+    "status",
+    "description",
+    "guestName",
+    "assignedBy",
+    "assignedByName",
+    "assignedTo",
+    "priority",
+    "createdAt",
+    "completedAt",
+    "notes",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificador de la tarea. Idéntico al id del documento de Firestore.",
+      "examples": ["task-1763000000000"]
+    },
+    "roomId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id del documento de la habitación en /rooms. NO es el número físico.",
+      "examples": ["room-201"]
+    },
+    "roomNumber": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Número físico de la habitación, el que ve el huésped. Nunca debe recibir el valor de roomId.",
+      "examples": [201]
+    },
+    "taskType": {
+      "type": "string",
+      "enum": ["cleaning", "maintenance", "inspection", "delivery", "guest_request"],
+      "description": "Tipo de tarea. El check-out automático siempre genera 'cleaning'."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "inProgress", "completed", "cancelled"],
+      "description": "Estado del ciclo de vida. camelCase, no snake_case."
+    },
+    "description": {
+      "type": "string",
+      "description": "Texto legible para el operario que atiende la tarea."
+    },
+    "guestName": {
+      "type": "string",
+      "description": "Nombre del huésped relacionado. Cadena vacía cuando no aplica."
+    },
+    "assignedBy": {
+      "type": "string",
+      "description": "UID de Firebase Auth de quien creó la tarea."
+    },
+    "assignedByName": {
+      "type": "string",
+      "description": "Nombre legible de quien creó la tarea, para mostrarlo sin resolver el UID."
+    },
+    "assignedTo": {
+      "type": ["string", "null"],
+      "description": "UID del operario asignado. null significa sin asignar: la tarea es visible para todo el personal operativo."
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Urgencia. El check-out automático usa 4; la alerta manual usa 5."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha de creación en ISO 8601 UTC.",
+      "examples": ["2026-11-11T18:05:00.000Z"]
+    },
+    "completedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Fecha de completado en ISO 8601 UTC. Obligatorio al pasar status a 'completed'."
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Observaciones que captura el operario desde el reloj al completar la tarea."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Versión del contrato con el que se escribió este documento."
+    }
+  }
+}
