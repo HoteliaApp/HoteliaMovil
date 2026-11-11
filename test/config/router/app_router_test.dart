@@ -30,6 +30,9 @@ class FakeRoomsRepository implements RoomsRepository {
 
   @override
   Future<Room> updateRoomStatus(String id, RoomStatus newStatus) async => throw UnimplementedError();
+
+  @override
+  Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) => Stream.value([]);
 }
 
 class FakeEmployeesRepository implements EmployeesRepository {
