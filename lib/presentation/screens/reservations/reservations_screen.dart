@@ -131,7 +131,7 @@ class ReservationsScreen extends ConsumerWidget {
                       queryParameters: {
                         'reservationId': r.id,
                         'guestName': r.guestName,
-                        'roomNumber': r.roomId,
+                        'roomNumber': r.roomNumber.toString(),
                       },
                     )
                 : null,
@@ -142,7 +142,7 @@ class ReservationsScreen extends ConsumerWidget {
                       extra: {
                         'reservationId': r.id,
                         'guestName': r.guestName,
-                        'roomNumber': r.roomId,
+                        'roomNumber': r.roomNumber,
                         'nights': r.nights,
                         'total': r.total,
                       },

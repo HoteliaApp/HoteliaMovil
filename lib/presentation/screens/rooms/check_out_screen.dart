@@ -8,7 +8,8 @@ import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dar
 class CheckOutScreen extends ConsumerWidget {
   final String reservationId;
   final String guestName;
-  final String roomNumber;
+  final String roomId;
+  final int roomNumber;
   final int nights;
   final double total;
 
@@ -16,6 +17,7 @@ class CheckOutScreen extends ConsumerWidget {
     super.key,
     required this.reservationId,
     required this.guestName,
+    required this.roomId,
     required this.roomNumber,
     required this.nights,
     required this.total,
@@ -118,7 +120,7 @@ class CheckOutScreen extends ConsumerWidget {
               child: ElevatedButton.icon(
                 onPressed: state.isLoading
                     ? null
-                    : () => notifier.performCheckOut(reservationId, roomNumber, guestName),
+                    : () => notifier.performCheckOut(reservationId, roomId, guestName),
                 icon: state.isLoading
                     ? const SizedBox(
                         width: 18,

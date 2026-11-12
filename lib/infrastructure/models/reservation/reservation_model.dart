@@ -5,6 +5,7 @@ import 'package:hotel_app/domain/domain.dart';
 class ReservationModel {
   final String id;
   final String roomId;
+  final int roomNumber;
   final String guestId;
   final String guestName;
   final DateTime checkIn;
@@ -18,6 +19,7 @@ class ReservationModel {
   const ReservationModel({
     required this.id,
     required this.roomId,
+    required this.roomNumber,
     required this.guestId,
     required this.guestName,
     required this.checkIn,
@@ -34,6 +36,7 @@ class ReservationModel {
     return ReservationModel(
       id: json['id']?.toString() ?? '',
       roomId: (json['roomId'] ?? json['room_id'] ?? '').toString(),
+      roomNumber: _parseRoomNumber(json['roomNumber'] ?? json['room_number']),
       guestId: (json['guestId'] ?? json['guest_id'] ?? '').toString(),
       guestName: json['guestName'] ?? json['guest_name'] ?? '',
       checkIn: DateTime.parse(json['checkIn'] ?? json['check_in']),
@@ -51,6 +54,7 @@ class ReservationModel {
   Map<String, dynamic> toJson() => {
         'id': id,
         'roomId': roomId,
+        'roomNumber': roomNumber,
         'guestId': guestId,
         'guestName': guestName,
         'checkIn': checkIn.toIso8601String(),
@@ -67,6 +71,7 @@ class ReservationModel {
     return Reservation(
       id: id,
       roomId: roomId,
+      roomNumber: roomNumber,
       guestId: guestId,
       guestName: guestName,
       checkIn: checkIn,
@@ -84,6 +89,7 @@ class ReservationModel {
     return ReservationModel(
       id: reservation.id,
       roomId: reservation.roomId,
+      roomNumber: reservation.roomNumber,
       guestId: reservation.guestId,
       guestName: reservation.guestName,
       checkIn: reservation.checkIn,
@@ -101,5 +107,14 @@ class ReservationModel {
       (e) => e.name == value,
       orElse: () => ReservationStatus.newReservation,
     );
+  }
+
+  /// Tolera reservaciones creadas antes de la issue #14, que no traen
+  /// roomNumber, y documentos donde se guardó como cadena.
+  static int _parseRoomNumber(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

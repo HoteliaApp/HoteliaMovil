@@ -14,12 +14,14 @@ import 'package:intl/intl.dart';
 class CheckInScreen extends ConsumerStatefulWidget {
   final String reservationId;
   final String guestName;
+  final String roomId;
   final String roomNumber;
 
   const CheckInScreen({
     super.key,
     required this.reservationId,
     required this.guestName,
+    required this.roomId,
     required this.roomNumber,
   });
 
@@ -78,7 +80,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     
     await notifier.performCheckIn(
       widget.reservationId,
-      widget.roomNumber,
+      widget.roomId,
       guestName: _guestNameCtrl.text.trim(),
       companions: companions,
       expectedCheckOut: _expectedCheckOut!,

@@ -386,6 +386,7 @@ class _CreateReservationDialogState
                               final success = await notifier.createReservation(
                                 CreateReservationParams(
                                   roomId: _roomId!,
+                                  roomNumber: selectedRoom?.roomNumber ?? 0,
                                   guestId:
                                       'guest-${DateTime.now().millisecondsSinceEpoch}',
                                   guestName: _guestName!,
