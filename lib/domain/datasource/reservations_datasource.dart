@@ -3,6 +3,7 @@ import 'package:hotel_app/domain/entities/entities.dart';
 /// Parámetros para crear una nueva reservación
 class CreateReservationParams {
   final String roomId;
+  final int roomNumber;
   final String guestId;
   final String guestName;
   final DateTime checkIn;
@@ -12,6 +13,7 @@ class CreateReservationParams {
 
   const CreateReservationParams({
     required this.roomId,
+    required this.roomNumber,
     required this.guestId,
     required this.guestName,
     required this.checkIn,

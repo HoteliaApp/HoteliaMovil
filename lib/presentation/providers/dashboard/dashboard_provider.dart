@@ -142,7 +142,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
                 id: 'ci-${res.id}',
                 type: 'checkIn',
                 guestName: res.guestName,
-                roomNumber: res.roomId,
+                roomNumber: res.roomNumber.toString(),
                 scheduledAt: res.checkIn,
               ),
             );
@@ -157,7 +157,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
                 id: 'co-${res.id}',
                 type: 'checkOut',
                 guestName: res.guestName,
-                roomNumber: res.roomId,
+                roomNumber: res.roomNumber.toString(),
                 scheduledAt: res.checkOut,
               ),
             );

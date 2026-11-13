@@ -50,7 +50,7 @@ class ReservationCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Hab. ${reservation.roomId} · ${reservation.nights} noches',
+                        'Hab. ${reservation.roomNumber} · ${reservation.nights} noches',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),

@@ -126,6 +126,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
       final reservation = ReservationModel(
         id: docRef.id,
         roomId: params.roomId,
+        roomNumber: params.roomNumber,
         guestId: params.guestId,
         guestName: params.guestName,
         checkIn: params.checkIn,

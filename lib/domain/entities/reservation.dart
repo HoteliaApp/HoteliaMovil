@@ -20,6 +20,7 @@ enum ReservationStatus {
 class Reservation {
   final String id;
   final String roomId;
+  final int roomNumber;
   final String guestId;
   final String guestName;
   final DateTime checkIn;
@@ -33,6 +34,7 @@ class Reservation {
   const Reservation({
     required this.id,
     required this.roomId,
+    required this.roomNumber,
     required this.guestId,
     required this.guestName,
     required this.checkIn,
@@ -59,6 +61,7 @@ class Reservation {
   Reservation copyWith({
     String? id,
     String? roomId,
+    int? roomNumber,
     String? guestId,
     String? guestName,
     DateTime? checkIn,
@@ -72,6 +75,7 @@ class Reservation {
     return Reservation(
       id: id ?? this.id,
       roomId: roomId ?? this.roomId,
+      roomNumber: roomNumber ?? this.roomNumber,
       guestId: guestId ?? this.guestId,
       guestName: guestName ?? this.guestName,
       checkIn: checkIn ?? this.checkIn,

@@ -199,7 +199,8 @@ final List<RouteBase> _routes = [
                       return CheckInScreen(
                         reservationId: q['reservationId'] ?? '',
                         guestName: q['guestName'] ?? '',
-                        roomNumber: q['roomNumber'] ?? roomId,
+                        roomNumber: q['roomNumber'] ?? '',
+                        roomId: roomId,
                       );
                     },
                   ),
@@ -214,7 +215,8 @@ final List<RouteBase> _routes = [
                       return CheckOutScreen(
                         reservationId: extra['reservationId'] as String? ?? '',
                         guestName: extra['guestName'] as String? ?? '',
-                        roomNumber: extra['roomNumber'] as String? ?? roomId,
+                        roomNumber: (extra['roomNumber'] as  num?)?.toInt() ?? 0,
+                        roomId: roomId,
                         nights: extra['nights'] as int? ?? 1,
                         total: (extra['total'] as num?)?.toDouble() ?? 0.0,
                       );
