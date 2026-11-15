@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
-import 'package:hotel_app/presentation/providers/reservations/reservations_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/widgets/reservations/create_reservation_dialog.dart';
@@ -75,6 +74,7 @@ class FakeReservationsRepository implements ReservationsRepository {
     final r = Reservation(
       id: 'res-${reservations.length + 1}',
       roomId: params.roomId,
+      roomNumber: params.roomNumber,
       guestId: params.guestId,
       guestName: params.guestName,
       checkIn: params.checkIn,
@@ -132,6 +132,7 @@ void main() {
   final existingReservation101 = Reservation(
     id: 'res-existing-101',
     roomId: 'room-101',
+    roomNumber: 101,
     guestId: 'guest-1',
     guestName: 'Huésped Existente',
     checkIn: DateTime(2026, 10, 20),

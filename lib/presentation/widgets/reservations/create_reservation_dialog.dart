@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
-import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/reservations/reservations_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 
@@ -224,7 +223,7 @@ class _CreateReservationDialogState
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: cs.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: cs.error.withValues(alpha: 0.4),
                       width: 1.2,
@@ -286,7 +285,7 @@ class _CreateReservationDialogState
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: cs.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: cs.primary.withValues(alpha: 0.4),
                       width: 1.2,

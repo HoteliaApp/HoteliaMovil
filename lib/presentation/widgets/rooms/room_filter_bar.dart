@@ -129,7 +129,7 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
                     labelStyle: const TextStyle(fontSize: 11),
                     prefixIcon: const Icon(Icons.people_outline, size: 16),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     suffixIcon: widget.selectedCapacity != null
                         ? GestureDetector(

@@ -71,7 +71,7 @@ class RoomsNotifier extends Notifier<RoomsState> {
   RoomsState build() {
     // Suscribe al stream reactivo al construirse; cancela automáticamente
     // cuando el provider se descarte.
-    _subscribeToStream();
+    Future.microtask(_subscribeToStream);
     return const RoomsState(isLoading: true);
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
@@ -23,11 +22,13 @@ class DashboardScreen extends ConsumerWidget {
     final greeting = (hour >= 5 && hour < 12)
         ? '¡Buenos días!'
         : (hour >= 12 && hour < 19)
-            ? '¡Buenas tardes!'
-            : '¡Buenas noches!';
+        ? '¡Buenas tardes!'
+        : '¡Buenas noches!';
     // Email o nombre para el usuario autenticado
     final userEmail = authState.email ?? 'Recepción';
-    final userName = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
+    final userName = userEmail.contains('@')
+        ? userEmail.split('@').first
+        : userEmail;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -43,8 +44,11 @@ class DashboardScreen extends ConsumerWidget {
               pinned: true,
               backgroundColor: theme.colorScheme.primary,
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding:
-                    const EdgeInsets.only(left: 20, right: 20, bottom: 14),
+                titlePadding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  bottom: 14,
+                ),
                 title: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +81,8 @@ class DashboardScreen extends ConsumerWidget {
               ),
               actions: [
                 // Botón Alerta Wearable (Sólo Admin/Recepción)
-                if (authState.role == UserRole.admin || authState.role == UserRole.receptionist)
+                if (authState.role == UserRole.admin ||
+                    authState.role == UserRole.receptionist)
                   IconButton(
                     onPressed: () {
                       showDialog(
@@ -92,7 +97,10 @@ class DashboardScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
@@ -100,7 +108,11 @@ class DashboardScreen extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.person_outline, size: 14, color: Colors.white),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           userName,
@@ -134,7 +146,9 @@ class DashboardScreen extends ConsumerWidget {
             if (state.isLoading)
               SliverFillRemaining(
                 child: Center(
-                  child: CircularProgressIndicator(color: theme.colorScheme.primary),
+                  child: CircularProgressIndicator(
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               )
             else ...[
@@ -149,12 +163,14 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // ── Alertas (check-ins/outs próximos) ──────────
-                    if (authState.role == UserRole.admin || authState.role == UserRole.receptionist) ...[
+                    if (authState.role == UserRole.admin ||
+                        authState.role == UserRole.receptionist) ...[
                       _SectionTitle(
                         title: 'Alertas de actividad',
+                        icon: Icons.notifications_active_outlined,
                         subtitle: state.alerts.isEmpty
                             ? null
-                            : '${state.alerts.length} pendiente(s)',
+                            : '${state.alerts.length} pendiente${state.alerts.length != 1 ? 's' : ''}',
                       ),
                       const SizedBox(height: 10),
                       if (state.alerts.isEmpty)
@@ -174,12 +190,14 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // ── Próximas reservaciones ─────────────────────
-                    if (authState.role == UserRole.admin || authState.role == UserRole.receptionist) ...[
+                    if (authState.role == UserRole.admin ||
+                        authState.role == UserRole.receptionist) ...[
                       _SectionTitle(
                         title: 'Reservaciones próximas',
+                        icon: Icons.calendar_month_rounded,
                         subtitle: state.upcomingReservations.isEmpty
                             ? null
-                            : '${state.upcomingReservations.length} activa(s)',
+                            : '${state.upcomingReservations.length} activa${state.upcomingReservations.length != 1 ? 's' : ''}',
                       ),
                       const SizedBox(height: 10),
                       if (state.upcomingReservations.isEmpty)
@@ -211,31 +229,40 @@ class DashboardScreen extends ConsumerWidget {
 class _SectionTitle extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final IconData? icon;
 
-  const _SectionTitle({required this.title, this.subtitle});
+  const _SectionTitle({required this.title, this.subtitle, this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
         if (subtitle != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               subtitle!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              style: const TextStyle(
+                color: AppColors.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -252,8 +279,8 @@ class _RoomStatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+    final statusColors = AppStatusColors.of(context);
+
     return GridView.count(
       shrinkWrap: true,
       padding: EdgeInsets.zero,
@@ -267,26 +294,25 @@ class _RoomStatsGrid extends StatelessWidget {
           label: 'Disponibles',
           value: stats.available,
           icon: Icons.check_circle_outline,
-          color: const Color(0xFF4CAF50),
+          color: statusColors.success,
         ),
         _StatCard(
           label: 'Ocupadas',
           value: stats.occupied,
           icon: Icons.person_rounded,
-          color: isDarkMode ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
+          color: statusColors.danger,
         ),
         _StatCard(
           label: 'Reservadas',
           value: stats.reserved,
           icon: Icons.bookmark_rounded,
-          color: isDarkMode ? Colors.blue[200]! : const Color(0xFF5C6BC0),
+          color: statusColors.info,
         ),
         _StatCard(
           label: 'Mantenimiento',
           value: stats.maintenance,
           icon: Icons.build_outlined,
-          //color: const Color.fromARGB(255, 36, 36, 36),
-          color: isDarkMode ? const Color.fromARGB(255, 211, 211, 211)! : const Color.fromARGB(255, 37, 37, 36),
+          color: statusColors.warning,
         ),
       ],
     );
@@ -308,46 +334,52 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 18),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {},
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Row(
             children: [
-              Text(
-                '$value',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
+                child: Icon(icon, color: color, size: 18),
               ),
-              Text(
-                label,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: color.withValues(alpha: 0.8)),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$value',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: color.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -360,87 +392,103 @@ class _AlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final statusColors = AppStatusColors.of(context);
     final isCheckIn = alert.type == 'checkIn';
-    final color = isCheckIn ? const Color(0xFF4CAF50) : Theme.of(context).colorScheme.primary;
+    final color = isCheckIn
+        ? statusColors.success
+        : Theme.of(context).colorScheme.primary;
     final icon = isCheckIn ? Icons.login_rounded : Icons.logout_rounded;
     final timeStr = DateFormat('HH:mm').format(alert.scheduledAt);
     final dayStr = alert.isToday ? 'Hoy' : 'Mañana';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Ícono
-          Container(
-            padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isDark ? theme.cardColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
+                // ── Ícono circular con fondo ──
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 18),
+                ),
+                const SizedBox(width: 12),
+
+                // ── Información ──
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Hab. ${alert.roomNumber}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _TypeChip(label: alert.label, color: color),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        alert.guestName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Tiempo / Fecha ──
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    Icon(icon, size: 16, color: color),
+                    const SizedBox(height: 2),
                     Text(
-                      alert.label,
+                      '$dayStr $timeStr',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$dayStr $timeStr',
-                        style: TextStyle(fontSize: 10, color: color),
+                        fontSize: 10,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  alert.guestName,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                Text(
-                  'Habitación ${alert.roomNumber}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
               ],
             ),
           ),
-
-        ],
+        ),
       ),
     );
   }
@@ -450,73 +498,156 @@ class _ReservationTile extends StatelessWidget {
   final Reservation reservation;
   const _ReservationTile({required this.reservation});
 
+  Color _getColor(BuildContext context) {
+    final statusColors = AppStatusColors.of(context);
+    return switch (reservation.status) {
+      ReservationStatus.newReservation => statusColors.warning,
+      ReservationStatus.confirmed => statusColors.info,
+      ReservationStatus.checkedIn => statusColors.success,
+      ReservationStatus.completed => statusColors.purple,
+      ReservationStatus.cancelled => statusColors.neutral,
+    };
+  }
+
+  IconData get _statusIcon => switch (reservation.status) {
+    ReservationStatus.newReservation => Icons.hourglass_empty_rounded,
+    ReservationStatus.confirmed => Icons.check_circle_outline_rounded,
+    ReservationStatus.checkedIn => Icons.login_rounded,
+    ReservationStatus.completed => Icons.logout_rounded,
+    ReservationStatus.cancelled => Icons.cancel_outlined,
+  };
+
+  IconData get _leadingIcon => switch (reservation.status) {
+    ReservationStatus.checkedIn => Icons.person_rounded,
+    ReservationStatus.confirmed => Icons.event_available_rounded,
+    ReservationStatus.newReservation => Icons.bookmark_add_outlined,
+    _ => Icons.calendar_today_rounded,
+  };
+
   @override
   Widget build(BuildContext context) {
-    final checkInStr =
-        DateFormat('dd/MM').format(reservation.checkIn);
-    final checkOutStr =
-        DateFormat('dd/MM').format(reservation.checkOut);
-    final isCheckedIn = reservation.status == ReservationStatus.checkedIn;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = _getColor(context);
+    final checkInStr = DateFormat('dd/MM').format(reservation.checkIn);
+    final checkOutStr = DateFormat('dd/MM').format(reservation.checkOut);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isCheckedIn ? Icons.person_rounded : Icons.event_available_rounded,
-            color: isCheckedIn ? Theme.of(context).colorScheme.primary : const Color(0xFF5C6BC0),
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reservation.guestName,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
+      child: Material(
+        color: isDark ? theme.cardColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-                Text(
-                  'Hab. ${reservation.roomId}  •  $checkInStr → $checkOutStr',
-                  style: Theme.of(context).textTheme.bodySmall,
+              ],
+            ),
+            child: Row(
+              children: [
+                // ── Ícono circular con fondo ──
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(_leadingIcon, color: color, size: 18),
+                ),
+                const SizedBox(width: 12),
+
+                // ── Información ──
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Habitación + Chip
+                      Row(
+                        children: [
+                          Text(
+                            'Hab. ${reservation.roomNumber}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _TypeChip(
+                            label: reservation.status.label,
+                            color: color,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // Huésped
+                      Text(
+                        reservation.guestName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Estado + fechas ──
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Icon(_statusIcon, size: 16, color: color),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$checkInStr → $checkOutStr',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: (isCheckedIn ? Theme.of(context).colorScheme.primary : const Color(0xFF5C6BC0))
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              isCheckedIn ? 'Adentro' : 'Confirmada',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isCheckedIn
-                    ? Theme.of(context).colorScheme.primary
-                    : const Color(0xFF5C6BC0),
-              ),
-            ),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _TypeChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -529,21 +660,35 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 36, color: Colors.grey.shade400),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+        color: isDark ? theme.cardColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: isDark ? 0.2 : 0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, size: 36, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }

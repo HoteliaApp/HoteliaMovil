@@ -68,7 +68,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: _getStatusColor(emp.status),
+                    backgroundColor: _getStatusColor(context, emp.status),
                     child: Icon(_getRoleIcon(emp.role), color: Colors.white),
                   ),
                   title: Text(emp.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -89,16 +89,17 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
     );
   }
 
-  Color _getStatusColor(UserStatus status) {
+  Color _getStatusColor(BuildContext context, UserStatus status) {
+    final statusColors = AppStatusColors.of(context);
     switch (status) {
       case UserStatus.pending:
-        return Colors.orange;
+        return statusColors.warning;
       case UserStatus.active:
-        return Colors.green;
+        return statusColors.success;
       case UserStatus.rejected:
-        return Colors.red;
+        return statusColors.danger;
       case UserStatus.inactive:
-        return Colors.grey;
+        return statusColors.neutral;
     }
   }
 

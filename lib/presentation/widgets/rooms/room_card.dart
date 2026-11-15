@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
+import 'package:hotel_app/infrastructure/models/rooms/room_model.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/widgets/rooms/room_status_badge.dart';
@@ -37,7 +37,7 @@ class RoomCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Imagen o placeholder ──
-            _RoomImage(images: room.images),
+            _RoomImage(images: room.images, roomNumber: room.roomNumber),
 
             // ── Contenido ──
             Padding(
@@ -148,33 +148,29 @@ class RoomCard extends ConsumerWidget {
 
 class _RoomImage extends StatelessWidget {
   final List<String> images;
-  const _RoomImage({required this.images});
+  final int roomNumber;
+
+  const _RoomImage({required this.images, required this.roomNumber});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-
-    if (images.isEmpty) {
-      return Container(
-        height: 150,
-        color: cs.surfaceContainerHighest,
-        child: Center(
-          child: Icon(Icons.hotel, size: 48, color: cs.onSurfaceVariant),
-        ),
-      );
-    }
+    final rawUrl = images.isNotEmpty
+        ? images.first
+        : RoomModel.defaultRoomImageUrl(roomNumber);
+    final imageUrl = RoomModel.formatImageUrl(rawUrl);
 
     return SizedBox(
       height: 150,
       width: double.infinity,
       child: Image.network(
-        images.first,
+        imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (ctx, err, stack) => Container(
           color: cs.surfaceContainerHighest,
           child: Center(
-            child: Icon(Icons.broken_image_outlined,
+            child: Icon(Icons.hotel_outlined,
                 size: 40, color: cs.onSurfaceVariant),
           ),
         ),

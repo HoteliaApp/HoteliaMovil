@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 
 /// Pantalla de registro de nuevo empleado del hotel
@@ -82,7 +81,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: Card(
                 elevation: 6,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
+                    borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: ConstrainedBox(

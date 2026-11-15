@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/entities/user.dart';
-import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/admin/employees_provider.dart';
+import 'package:hotel_app/presentation/providers/providers.dart';
 import 'dart:math';
 
 class ProfileScreen extends ConsumerWidget {
@@ -71,6 +71,78 @@ class ProfileScreen extends ConsumerWidget {
 
                 const SizedBox(height: 20),
 
+                // ── Tarjeta de Apariencia (Modo Claro/Oscuro) ──────────────
+                _InfoCard(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            ref.watch(themeModeProvider) == ThemeMode.dark
+                                ? Icons.dark_mode_outlined
+                                : ref.watch(themeModeProvider) == ThemeMode.light
+                                    ? Icons.light_mode_outlined
+                                    : Icons.brightness_auto_outlined,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Tema visual',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Modo claro, oscuro o del sistema',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SegmentedButton<ThemeMode>(
+                            segments: const [
+                              ButtonSegment(
+                                value: ThemeMode.light,
+                                icon: Icon(Icons.light_mode, size: 16),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.system,
+                                icon: Icon(Icons.brightness_auto, size: 16),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.dark,
+                                icon: Icon(Icons.dark_mode, size: 16),
+                              ),
+                            ],
+                            selected: {ref.watch(themeModeProvider)},
+                            onSelectionChanged: (selected) {
+                              ref.read(themeModeProvider.notifier).setThemeMode(selected.first);
+                            },
+                            showSelectedIcon: false,
+                            style: SegmentedButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
                 // ── Tarjeta de configuración (Wearable) ───────────────────────────────
                 if (authState.role == UserRole.housekeeper) ...[
                   _InfoCard(
@@ -96,14 +168,14 @@ class ProfileScreen extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 builder: (dialogContext) => Dialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   elevation: 0,
                                   backgroundColor: Colors.transparent,
                                   child: Container(
                                     padding: const EdgeInsets.all(24),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).cardColor,
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
                                           color: AppColors.primary.withValues(alpha: 0.2),
@@ -170,7 +242,7 @@ class ProfileScreen extends ConsumerWidget {
                                               backgroundColor: AppColors.primary,
                                               foregroundColor: Colors.white,
                                               padding: const EdgeInsets.symmetric(vertical: 16),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                             ),
                                             onPressed: () => Navigator.pop(dialogContext),
                                             child: const Text('Entendido', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -255,12 +327,14 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFF661A), Color(0xFFFF9A5C)],
+          colors: [theme.colorScheme.primary, const Color(0xFFD4510E)],
         ),
       ),
       child: SafeArea(
@@ -334,7 +408,7 @@ class _RoleBadge extends StatelessWidget {
         color: light
             ? Colors.white.withValues(alpha: 0.25)
             : AppColors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: light
               ? Colors.white.withValues(alpha: 0.5)

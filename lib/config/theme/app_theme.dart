@@ -22,10 +22,70 @@ class AppColors {
 
   /// Verde — color de éxito
   static const Color success = Color(0xFF4CAF50);
+
+  // ── Paleta de estados semánticos (Modo claro) ──
+  static const Color statusSuccessLight = Color(0xFF2E7D32);
+  static const Color statusInfoLight = Color(0xFF1565C0);
+  static const Color statusWarningLight = Color(0xFFE65100);
+  static const Color statusDangerLight = Color(0xFFC62828);
+  static const Color statusPurpleLight = Color(0xFF6A1B9A);
+  static const Color statusNeutralLight = Color(0xFF616161);
+
+  // ── Paleta de estados semánticos (Modo oscuro - luminosos para alto contraste y descanso visual) ──
+  static const Color statusSuccessDark = Color(0xFF81C784);
+  static const Color statusInfoDark = Color(0xFF64B5F6);
+  static const Color statusWarningDark = Color(0xFFFFB74D);
+  static const Color statusDangerDark = Color(0xFFE57373);
+  static const Color statusPurpleDark = Color(0xFFBA68C8);
+  static const Color statusNeutralDark = Color(0xFFB0BEC5);
+}
+
+/// Colores semánticos de estado según el brillo del tema activo (claro u oscuro).
+class AppStatusColors {
+  final Color success;
+  final Color info;
+  final Color warning;
+  final Color danger;
+  final Color purple;
+  final Color neutral;
+
+  const AppStatusColors({
+    required this.success,
+    required this.info,
+    required this.warning,
+    required this.danger,
+    required this.purple,
+    required this.neutral,
+  });
+
+  static AppStatusColors of(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark ||
+        theme.colorScheme.brightness == Brightness.dark;
+    return isDark ? dark : light;
+  }
+
+  static const light = AppStatusColors(
+    success: AppColors.statusSuccessLight,
+    info: AppColors.statusInfoLight,
+    warning: AppColors.statusWarningLight,
+    danger: AppColors.statusDangerLight,
+    purple: AppColors.statusPurpleLight,
+    neutral: AppColors.statusNeutralLight,
+  );
+
+  static const dark = AppStatusColors(
+    success: AppColors.statusSuccessDark,
+    info: AppColors.statusInfoDark,
+    warning: AppColors.statusWarningDark,
+    danger: AppColors.statusDangerDark,
+    purple: AppColors.statusPurpleDark,
+    neutral: AppColors.statusNeutralDark,
+  );
 }
 
 /// Clase que gestiona el tema de la aplicación.
-/// Soporta modo claro y oscuro con la misma paleta de colores.
+/// Soporta modo claro y oscuro con la misma paleta de colores y bordes redondeados consistentes (16px).
 class AppTheme {
   final bool isDarkMode;
 
@@ -41,6 +101,17 @@ class AppTheme {
     ThemeData(brightness: Brightness.dark).textTheme,
   );
 
+  /// Configuración de transiciones de página fluidas
+  static const PageTransitionsTheme _pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+    },
+  );
+
   ThemeData getTheme() => isDarkMode ? _darkTheme : _lightTheme;
 
   // ─────────────────────────────── Tema Claro ──────────────────────────────
@@ -48,6 +119,8 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.light,
     textTheme: _poppinsLight,
+    splashFactory: InkSparkle.splashFactory,
+    pageTransitionsTheme: _pageTransitionsTheme,
     colorScheme: const ColorScheme(
       brightness: Brightness.light,
       // Primario
@@ -109,29 +182,55 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
     ),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      side: BorderSide.none,
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
     ),
@@ -142,6 +241,8 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     textTheme: _poppinsDark,
+    splashFactory: InkSparkle.splashFactory,
+    pageTransitionsTheme: _pageTransitionsTheme,
     colorScheme: const ColorScheme(
       brightness: Brightness.dark,
       // Primario
@@ -203,29 +304,55 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
     ),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      side: BorderSide.none,
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.backgroundDark,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF555555)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFF555555)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
     ),

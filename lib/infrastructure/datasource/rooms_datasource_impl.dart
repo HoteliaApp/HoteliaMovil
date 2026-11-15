@@ -87,16 +87,16 @@ class RoomsDataSourceImpl implements RoomsDataSource {
     if (snapshot.docs.isNotEmpty) return;
 
     final defaultRooms = [
-      const RoomModel(id: 'room-101', roomNumber: 101, roomType: 'single', status: 'available', pricePerNight: 50.0, description: 'Habitación Sencilla Estándar', images: [], capacity: 1, amenities: ['TV', 'WiFi']),
-      const RoomModel(id: 'room-102', roomNumber: 102, roomType: 'single', status: 'available', pricePerNight: 50.0, description: 'Habitación Sencilla Estándar', images: [], capacity: 1, amenities: ['TV', 'WiFi']),
-      const RoomModel(id: 'room-103', roomNumber: 103, roomType: 'double', status: 'available', pricePerNight: 80.0, description: 'Habitación Doble Estándar', images: [], capacity: 2, amenities: ['TV', 'WiFi', 'AC']),
-      const RoomModel(id: 'room-104', roomNumber: 104, roomType: 'double', status: 'available', pricePerNight: 80.0, description: 'Habitación Doble Estándar', images: [], capacity: 2, amenities: ['TV', 'WiFi', 'AC']),
-      const RoomModel(id: 'room-201', roomNumber: 201, roomType: 'suite', status: 'available', pricePerNight: 150.0, description: 'Suite Principal con Vista', images: [], capacity: 4, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi']),
-      const RoomModel(id: 'room-202', roomNumber: 202, roomType: 'suite', status: 'available', pricePerNight: 150.0, description: 'Suite Principal con Vista', images: [], capacity: 4, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi']),
-      const RoomModel(id: 'room-301', roomNumber: 301, roomType: 'deluxe', status: 'available', pricePerNight: 120.0, description: 'Habitación Deluxe', images: [], capacity: 3, amenities: ['TV', 'WiFi', 'AC', 'Minibar']),
-      const RoomModel(id: 'room-302', roomNumber: 302, roomType: 'deluxe', status: 'available', pricePerNight: 120.0, description: 'Habitación Deluxe', images: [], capacity: 3, amenities: ['TV', 'WiFi', 'AC', 'Minibar']),
-      const RoomModel(id: 'room-401', roomNumber: 401, roomType: 'penthouse', status: 'available', pricePerNight: 300.0, description: 'Penthouse Exclusivo', images: [], capacity: 6, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi', 'Cocina', 'Terraza']),
-      const RoomModel(id: 'room-402', roomNumber: 402, roomType: 'penthouse', status: 'available', pricePerNight: 300.0, description: 'Penthouse Exclusivo', images: [], capacity: 6, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi', 'Cocina', 'Terraza']),
+      RoomModel(id: 'room-101', roomNumber: 101, roomType: 'single', status: 'available', pricePerNight: 50.0, description: 'Habitación Sencilla Estándar', images: [RoomModel.defaultRoomImageUrl(101)], capacity: 1, amenities: ['TV', 'WiFi']),
+      RoomModel(id: 'room-102', roomNumber: 102, roomType: 'single', status: 'available', pricePerNight: 50.0, description: 'Habitación Sencilla Estándar', images: [RoomModel.defaultRoomImageUrl(102)], capacity: 1, amenities: ['TV', 'WiFi']),
+      RoomModel(id: 'room-103', roomNumber: 103, roomType: 'double', status: 'available', pricePerNight: 80.0, description: 'Habitación Doble Estándar', images: [RoomModel.defaultRoomImageUrl(103)], capacity: 2, amenities: ['TV', 'WiFi', 'AC']),
+      RoomModel(id: 'room-104', roomNumber: 104, roomType: 'double', status: 'available', pricePerNight: 80.0, description: 'Habitación Doble Estándar', images: [RoomModel.defaultRoomImageUrl(104)], capacity: 2, amenities: ['TV', 'WiFi', 'AC']),
+      RoomModel(id: 'room-201', roomNumber: 201, roomType: 'suite', status: 'available', pricePerNight: 150.0, description: 'Suite Principal con Vista', images: [RoomModel.defaultRoomImageUrl(201)], capacity: 4, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi']),
+      RoomModel(id: 'room-202', roomNumber: 202, roomType: 'suite', status: 'available', pricePerNight: 150.0, description: 'Suite Principal con Vista', images: [RoomModel.defaultRoomImageUrl(202)], capacity: 4, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi']),
+      RoomModel(id: 'room-301', roomNumber: 301, roomType: 'deluxe', status: 'available', pricePerNight: 120.0, description: 'Habitación Deluxe', images: [RoomModel.defaultRoomImageUrl(301)], capacity: 3, amenities: ['TV', 'WiFi', 'AC', 'Minibar']),
+      RoomModel(id: 'room-302', roomNumber: 302, roomType: 'deluxe', status: 'available', pricePerNight: 120.0, description: 'Habitación Deluxe', images: [RoomModel.defaultRoomImageUrl(302)], capacity: 3, amenities: ['TV', 'WiFi', 'AC', 'Minibar']),
+      RoomModel(id: 'room-401', roomNumber: 401, roomType: 'penthouse', status: 'available', pricePerNight: 300.0, description: 'Penthouse Exclusivo', images: [RoomModel.defaultRoomImageUrl(401)], capacity: 6, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi', 'Cocina', 'Terraza']),
+      RoomModel(id: 'room-402', roomNumber: 402, roomType: 'penthouse', status: 'available', pricePerNight: 300.0, description: 'Penthouse Exclusivo', images: [RoomModel.defaultRoomImageUrl(402)], capacity: 6, amenities: ['TV', 'WiFi', 'AC', 'Minibar', 'Jacuzzi', 'Cocina', 'Terraza']),
     ];
 
     for (var room in defaultRooms) {
