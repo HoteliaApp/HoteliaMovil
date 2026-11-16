@@ -24,6 +24,7 @@ class TaskMapper {
       completedAt: _parseDate(data['completedAt']),
       priority: _parseInt(data['priority'], fallback: 3),
       notes: data['notes'] as String?,
+      hotelId: data['hotelId'] as String? ?? 'hotel_101',
     );
   }
 
@@ -44,6 +45,7 @@ class TaskMapper {
       'createdAt': task.createdAt.toIso8601String(),
       'completedAt': task.completedAt?.toIso8601String(),
       'notes': task.notes,
+      'hotelId': task.hotelId,
       'schemaVersion': Task.schemaVersion,
     };
   }

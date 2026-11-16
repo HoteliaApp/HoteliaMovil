@@ -15,6 +15,7 @@ class ReservationModel {
   final double total;
   final DateTime createdAt;
   final String? notes;
+  final String hotelId;
 
   const ReservationModel({
     required this.id,
@@ -29,6 +30,7 @@ class ReservationModel {
     required this.total,
     required this.createdAt,
     this.notes,
+    this.hotelId = 'hotel_101',
   });
 
   /// Construye un [ReservationModel] desde un mapa JSON del API
@@ -47,6 +49,7 @@ class ReservationModel {
       createdAt: DateTime.parse(
           json['createdAt'] ?? json['created_at'] ?? DateTime.now().toIso8601String()),
       notes: json['notes'],
+      hotelId: (json['hotelId'] ?? json['hotel_id'] ?? 'hotel_101').toString(),
     );
   }
 
@@ -64,6 +67,7 @@ class ReservationModel {
         'total': total,
         'createdAt': createdAt.toIso8601String(),
         if (notes != null) 'notes': notes,
+        'hotelId': hotelId,
       };
 
   /// Convierte el [ReservationModel] a la entidad de dominio [Reservation]
@@ -81,6 +85,7 @@ class ReservationModel {
       total: total,
       createdAt: createdAt,
       notes: notes,
+      hotelId: hotelId,
     );
   }
 
@@ -99,6 +104,7 @@ class ReservationModel {
       total: reservation.total,
       createdAt: reservation.createdAt,
       notes: reservation.notes,
+      hotelId: reservation.hotelId,
     );
   }
 

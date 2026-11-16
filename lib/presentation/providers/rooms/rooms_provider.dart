@@ -2,13 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/infrastructure/infraestructure.dart';
-
-
+import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 
 // ─────────────────────────── Infraestructura ────────────────────────────────
 
 final roomsDataSourceProvider = Provider<RoomsDataSource>((ref) {
-  final dataSource = RoomsDataSourceImpl(FirebaseFirestore.instance);
+  final hotelId = ref.watch(currentHotelIdProvider);
+  final dataSource = RoomsDataSourceImpl(
+    FirebaseFirestore.instance,
+    hotelId: hotelId,
+  );
   // Se siembran los cuartos de manera asíncrona (fuego y olvido)
   dataSource.seedRoomsIfEmpty().catchError((_) {});
   return dataSource;

@@ -48,6 +48,7 @@ class Room {
   final List<String> images;
   final int capacity;
   final List<String> amenities;
+  final String hotelId;
 
   const Room({
     required this.id,
@@ -59,6 +60,7 @@ class Room {
     required this.images,
     required this.capacity,
     required this.amenities,
+    this.hotelId = 'hotel_101',
   });
 
   /// Retorna true si la habitación está disponible para reservar
@@ -75,6 +77,7 @@ class Room {
     List<String>? images,
     int? capacity,
     List<String>? amenities,
+    String? hotelId,
   }) {
     return Room(
       id: id ?? this.id,
@@ -86,12 +89,13 @@ class Room {
       images: images ?? this.images,
       capacity: capacity ?? this.capacity,
       amenities: amenities ?? this.amenities,
+      hotelId: hotelId ?? this.hotelId,
     );
   }
 
   @override
   String toString() =>
-      'Room(id: $id, number: $roomNumber, type: ${roomType.label}, status: ${status.label})';
+      'Room(id: $id, number: $roomNumber, hotelId: $hotelId, type: ${roomType.label}, status: ${status.label})';
 
   @override
   bool operator ==(Object other) =>

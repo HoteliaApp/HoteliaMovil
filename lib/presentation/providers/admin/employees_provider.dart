@@ -8,7 +8,8 @@ import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 
 /// Provider del datasource de empleados
 final employeesDataSourceProvider = Provider<EmployeesDataSource>((ref) {
-  return EmployeesDataSourceImpl();
+  final hotelId = ref.watch(currentHotelIdProvider);
+  return EmployeesDataSourceImpl(hotelId: hotelId);
 });
 
 /// Provider del repositorio de empleados
@@ -52,7 +53,8 @@ class EmployeesNotifier extends Notifier<bool> {
       // Registrar en Auditoría
       final managerEmail =
           ref.read(authProvider).email ?? 'gerente@desconocido.com';
-      final auditRepo = AuditRepository();
+      final currentHotelId = ref.read(currentHotelIdProvider);
+      final auditRepo = AuditRepository(hotelId: currentHotelId);
       await auditRepo.logAction(
         action: 'UPDATE_EMPLOYEE',
         description:

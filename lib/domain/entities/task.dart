@@ -30,7 +30,7 @@ enum TaskPriority {
 
 /// Entidad de dominio que representa una tarea del hotel.
 class Task {
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
 
   final String id;
   final String roomId;
@@ -53,6 +53,9 @@ class Task {
   /// Observaciones capturadas por el operario desde el reloj al completar.
   final String? notes;
 
+  /// Inquilino (hotel) al que pertenece la tarea.
+  final String hotelId;
+
   const Task({
     required this.id,
     required this.roomId,
@@ -68,6 +71,7 @@ class Task {
     this.completedAt,
     this.priority = 3,  
     this.notes,
+    this.hotelId = 'hotel_101',
   });
 
   /// Etiqueta legible del tipo de tarea (compatible con WearTaskType)
@@ -127,6 +131,7 @@ class Task {
     DateTime? completedAt,
     int? priority,
     String? notes,
+    String? hotelId,
   }) {
     return Task(
       id: id ?? this.id,
@@ -143,12 +148,13 @@ class Task {
       completedAt: completedAt ?? this.completedAt,
       priority: priority ?? this.priority,
       notes: notes ?? this.notes,
+      hotelId: hotelId ?? this.hotelId,
     );
   }
 
   @override
   String toString() =>
-      'Task(id: $id, roomNumber: $roomNumber, type: $taskTypeLabel, status: $statusLabel)';
+      'Task(id: $id, hotelId: $hotelId, roomNumber: $roomNumber, type: $taskTypeLabel, status: $statusLabel)';
 
   @override
   bool operator ==(Object other) =>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://hotelia.app/schemas/v1/alert.schema.json",
+  "$id": "https://hotelia.app/schemas/v2/alert.schema.json",
   "title": "Hotelia Alert",
   "description": "Documento de la colección /alerts de Cloud Firestore. Avisos que recepción envía al smartwatch y que la Smart TV muestra en su panel superior. Toda alerta acompaña a una tarea de /tasks.",
   "type": "object",
@@ -19,6 +19,7 @@
     "createdAt",
     "isAcknowledged",
     "acknowledgedAt",
+    "hotelId",
     "schemaVersion"
   ],
   "properties": {
@@ -89,9 +90,15 @@
       "format": "date-time",
       "description": "Fecha en que se reconoció, en ISO 8601 UTC. null mientras isAcknowledged sea false."
     },
+    "hotelId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id del hotel propietario del documento para aislamiento multi-tenant.",
+      "examples": ["hotel_101"]
+    },
     "schemaVersion": {
       "type": "integer",
-      "const": 1,
+      "enum": [1, 2],
       "description": "Versión del contrato con el que se escribió este documento."
     }
   }

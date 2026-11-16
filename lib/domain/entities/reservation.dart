@@ -30,6 +30,7 @@ class Reservation {
   final double total;
   final DateTime createdAt;
   final String? notes;
+  final String hotelId;
 
   const Reservation({
     required this.id,
@@ -44,6 +45,7 @@ class Reservation {
     required this.total,
     required this.createdAt,
     this.notes,
+    this.hotelId = 'hotel_101',
   });
 
   /// Número de noches de la reservación
@@ -71,6 +73,7 @@ class Reservation {
     double? total,
     DateTime? createdAt,
     String? notes,
+    String? hotelId,
   }) {
     return Reservation(
       id: id ?? this.id,
@@ -85,12 +88,13 @@ class Reservation {
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
+      hotelId: hotelId ?? this.hotelId,
     );
   }
 
   @override
   String toString() =>
-      'Reservation(id: $id, guest: $guestName, status: ${status.label}, nights: $nights)';
+      'Reservation(id: $id, hotelId: $hotelId, guest: $guestName, status: ${status.label}, nights: $nights)';
 
   @override
   bool operator ==(Object other) =>

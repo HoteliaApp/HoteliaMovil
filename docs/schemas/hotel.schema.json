@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hotelia.app/schemas/v2/hotel.schema.json",
+  "title": "Hotelia Tenant Hotel",
+  "description": "Documento de la colección /hotels de Cloud Firestore. Representa la configuración del inquilino (hotel) en el modelo multi-tenant SaaS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "floors",
+    "address",
+    "createdAt",
+    "plan",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificador único del hotel/inquilino. Idéntico al id del documento.",
+      "examples": ["hotel_101", "hotel_valle_01"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nombre comercial del hotel.",
+      "examples": ["Gran Hotel Central"]
+    },
+    "floors": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Número de pisos que administra el hotel.",
+      "examples": [4]
+    },
+    "address": {
+      "type": "string",
+      "description": "Dirección física del hotel.",
+      "examples": ["Av. Principal 123, Ciudad"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha de registro del hotel en ISO 8601 UTC."
+    },
+    "plan": {
+      "type": "string",
+      "enum": ["basic", "standard", "premium"],
+      "description": "Nivel de suscripción SaaS del hotel."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2,
+      "description": "Versión del esquema contractual (v2 multi-inquilino)."
+    }
+  }
+}
