@@ -12,6 +12,7 @@ class AuthState {
     this.name,
     this.role,
     this.status,
+    this.hotelId,
     this.isLoading = false,
   });
 
@@ -20,6 +21,7 @@ class AuthState {
   final String? name;
   final UserRole? role;
   final UserStatus? status;
+  final String? hotelId;
   final bool isLoading;
 
   AuthState copyWith({
@@ -28,6 +30,7 @@ class AuthState {
     String? name,
     UserRole? role,
     UserStatus? status,
+    String? hotelId,
     bool? isLoading,
   }) {
     return AuthState(
@@ -36,6 +39,7 @@ class AuthState {
       name: name ?? this.name,
       role: role ?? this.role,
       status: status ?? this.status,
+      hotelId: hotelId ?? this.hotelId,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -52,21 +56,26 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   Future<void> _initialize() async {
-    _authSubscription?.cancel();
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((firebaseUser) async {
-      if (firebaseUser == null) {
-        _userDocSubscription?.cancel();
-        _userDocSubscription = null;
-        state = const AuthState(isAuthenticated: false, isLoading: false);
-      } else {
-        await _fetchAndListenUserDocument(firebaseUser.uid, firebaseUser.email ?? '');
-      }
-    });
-
-    ref.onDispose(() {
+    try {
       _authSubscription?.cancel();
-      _userDocSubscription?.cancel();
-    });
+      _authSubscription = FirebaseAuth.instance.authStateChanges().listen((firebaseUser) async {
+        if (firebaseUser == null) {
+          _userDocSubscription?.cancel();
+          _userDocSubscription = null;
+          state = const AuthState(isAuthenticated: false, isLoading: false);
+        } else {
+          await _fetchAndListenUserDocument(firebaseUser.uid, firebaseUser.email ?? '');
+        }
+      });
+
+      ref.onDispose(() {
+        _authSubscription?.cancel();
+        _userDocSubscription?.cancel();
+      });
+    } catch (_) {
+      // Tolera entornos de pruebas unitarias sin Firebase inicializado
+      state = const AuthState(isAuthenticated: false, isLoading: false);
+    }
   }
 
   /// Escucha en tiempo real los cambios del documento /users/{uid} en Firestore.
@@ -117,12 +126,15 @@ class AuthNotifier extends Notifier<AuthState> {
         orElse: () => UserStatus.pending,
       );
 
+      final hotelId = data['hotelId'] as String? ?? 'hotel_101';
+
       state = AuthState(
         isAuthenticated: true,
         email: email,
         name: data['name'] as String? ?? '',
         role: role,
         status: status,
+        hotelId: hotelId,
         isLoading: false,
       );
     } else {
@@ -167,6 +179,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String name,
     required String email,
     required String password,
+    String hotelId = 'hotel_101',
   }) async {
     if (name.trim().isEmpty) {
       throw Exception('Ingresa el nombre del empleado');
@@ -197,6 +210,7 @@ class AuthNotifier extends Notifier<AuthState> {
         'email': email.trim().toLowerCase(),
         'role': UserRole.unassigned.name,
         'status': UserStatus.pending.name,
+        'hotelId': hotelId,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -228,3 +242,11 @@ class AuthNotifier extends Notifier<AuthState> {
 }
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+
+/// Provider que expone el hotelId activo de la sesión del usuario.
+/// Provee aislamiento multi-tenant a través de toda la aplicación.
+/// Por defecto utiliza 'hotel_101' si el usuario no tiene hotelId configurado.
+final currentHotelIdProvider = Provider<String>((ref) {
+  final authState = ref.watch(authProvider);
+  return authState.hotelId ?? 'hotel_101';
+});

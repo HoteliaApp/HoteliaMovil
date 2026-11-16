@@ -1,7 +1,7 @@
 # Contrato de datos del ecosistema Hotelia
 
-> **Versión del esquema: 1**
-> Última actualización: 2026-11-11 · Issue #12
+> **Versión del esquema: 2 (Multi-inquilino / SaaS)**
+> Última actualización: 2026-11-15 · Issue #24 (H-24)
 
 
 Ninguna app habla con otra directamente. El contrato es Firestore, y estas dos
@@ -150,18 +150,16 @@ Estado anterior a la issue #12, verificado en los tres repositorios:
 
 ---
 
-## Versión 2 — reservada para la issue #24 (multi-inquilino)
+## Versión 2 — Implementada para la issue #24 (multi-inquilino / SaaS)
 
-Declarada aquí para que el trabajo de Fase 2 pueda construirse contra un
-contrato cerrado sin esperar a la migración.
+Implementada en `HoteliaMovil` para aislamiento de inquilinos (`hotelId`).
 
-La v2 **agrega** los siguientes campos a `/tasks` y `/alerts`, sin quitar ni
-renombrar ninguno de los actuales:
+La v2 **agrega** los siguientes campos a `/tasks`, `/alerts`, `/rooms` y `/reservations`:
 
 | Campo | Tipo | Notas |
 |---|---|---|
-| `hotelId` | string | Id del hotel propietario del documento. Ej. `"hotel_valle_01"` |
-| `schemaVersion` | number | Pasa a `2` |
+| `hotelId` | string | Id del hotel propietario del documento. Ej. `"hotel_101"`, `"hotel_valle_01"` |
+| `schemaVersion` | number | Fijado en `2` |
 
 Y se incorpora la colección de inquilinos:
 

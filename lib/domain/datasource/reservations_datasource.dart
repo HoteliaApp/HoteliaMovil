@@ -10,6 +10,7 @@ class CreateReservationParams {
   final DateTime checkOut;
   final double total;
   final String? notes;
+  final String hotelId;
 
   const CreateReservationParams({
     required this.roomId,
@@ -20,6 +21,7 @@ class CreateReservationParams {
     required this.checkOut,
     this.total = 0.0,
     this.notes,
+    this.hotelId = 'hotel_101',
   });
 }
 

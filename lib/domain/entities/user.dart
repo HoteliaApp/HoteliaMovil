@@ -38,6 +38,7 @@ class User {
   final UserStatus status;
   final String? avatarUrl;
   final DateTime createdAt;
+  final String hotelId;
 
   const User({
     required this.id,
@@ -47,6 +48,7 @@ class User {
     this.status = UserStatus.pending,
     this.avatarUrl,
     required this.createdAt,
+    this.hotelId = 'hotel_101',
   });
 
   /// Retorna true si el usuario es administrador
@@ -67,6 +69,7 @@ class User {
     UserStatus? status,
     String? avatarUrl,
     DateTime? createdAt,
+    String? hotelId,
   }) {
     return User(
       id: id ?? this.id,
@@ -76,12 +79,13 @@ class User {
       status: status ?? this.status,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
+      hotelId: hotelId ?? this.hotelId,
     );
   }
 
   @override
   String toString() =>
-      'User(id: $id, name: $name, role: ${role.label}, status: ${status.label})';
+      'User(id: $id, name: $name, hotelId: $hotelId, role: ${role.label}, status: ${status.label})';
 
   @override
   bool operator ==(Object other) =>

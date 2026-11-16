@@ -12,6 +12,7 @@ class RoomModel {
   final List<String> images;
   final int capacity;
   final List<String> amenities;
+  final String hotelId;
 
   const RoomModel({
     required this.id,
@@ -23,6 +24,7 @@ class RoomModel {
     required this.images,
     required this.capacity,
     required this.amenities,
+    this.hotelId = 'hotel_101',
   });
 
   /// Formatea o sanitiza URLs de ImageKit para asegurar que no fallen
@@ -61,6 +63,7 @@ class RoomModel {
       images: images,
       capacity: (json['capacity'] ?? 1) as int,
       amenities: List<String>.from(json['amenities'] ?? []),
+      hotelId: (json['hotelId'] ?? json['hotel_id'] ?? 'hotel_101').toString(),
     );
   }
 
@@ -75,6 +78,7 @@ class RoomModel {
     'images': images,
     'capacity': capacity,
     'amenities': amenities,
+    'hotelId': hotelId,
   };
 
   /// Convierte el [RoomModel] a la entidad de dominio [Room]
@@ -89,6 +93,7 @@ class RoomModel {
       images: images,
       capacity: capacity,
       amenities: amenities,
+      hotelId: hotelId,
     );
   }
 
@@ -104,6 +109,7 @@ class RoomModel {
       images: room.images,
       capacity: room.capacity,
       amenities: room.amenities,
+      hotelId: room.hotelId,
     );
   }
 

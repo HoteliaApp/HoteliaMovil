@@ -34,6 +34,7 @@ class UserMapper {
       ),
       avatarUrl: data['avatarUrl'] as String?,
       createdAt: createdAt,
+      hotelId: data['hotelId'] as String? ?? 'hotel_101',
     );
   }
 
@@ -46,6 +47,7 @@ class UserMapper {
       'status': user.status.name,
       if (user.avatarUrl != null) 'avatarUrl': user.avatarUrl,
       'createdAt': Timestamp.fromDate(user.createdAt),
+      'hotelId': user.hotelId,
     };
   }
 }

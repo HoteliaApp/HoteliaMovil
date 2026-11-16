@@ -5,6 +5,7 @@ class AuditLog {
   final String performedBy;
   final String targetId;
   final DateTime timestamp;
+  final String hotelId;
 
   const AuditLog({
     required this.id,
@@ -13,6 +14,7 @@ class AuditLog {
     required this.performedBy,
     required this.targetId,
     required this.timestamp,
+    this.hotelId = 'hotel_101',
   });
 
   Map<String, dynamic> toMap() {
@@ -22,6 +24,7 @@ class AuditLog {
       'performedBy': performedBy,
       'targetId': targetId,
       'timestamp': timestamp,
+      'hotelId': hotelId,
     };
   }
 }

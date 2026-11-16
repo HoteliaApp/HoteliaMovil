@@ -7,10 +7,12 @@ import 'package:hotel_app/infrastructure/mappers/task_mapper.dart';
 class TaskDataSourceImpl implements TaskDataSource {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _firebaseAuth;
+  final String hotelId;
 
   TaskDataSourceImpl({
     FirebaseFirestore? firestore,
     FirebaseAuth? firebaseAuth,
+    this.hotelId = 'hotel_101',
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
@@ -95,6 +97,7 @@ class TaskDataSourceImpl implements TaskDataSource {
       'createdAt': DateTime.now().toIso8601String(),
       'isAcknowledged': false,
       'acknowledgedAt': null,
+      'hotelId': hotelId,
       'schemaVersion': Task.schemaVersion,
     });
 
@@ -128,6 +131,7 @@ class TaskDataSourceImpl implements TaskDataSource {
       completedAt: null,
       priority: priority,
       notes: null,
+      hotelId: hotelId,
     );
  
     await _tasks.doc(taskId).set(TaskMapper.toFirestore(task));
@@ -146,7 +150,10 @@ class TaskDataSourceImpl implements TaskDataSource {
 
   @override
   Stream<List<Task>> watchActiveTasks() {
-    return _tasks.snapshots().map((snapshot) {
+    return _tasks
+        .where('hotelId', isEqualTo: hotelId)
+        .snapshots()
+        .map((snapshot) {
       final tasks = snapshot.docs
           .map((doc) => TaskMapper.fromFirestore(doc.data(), doc.id))
           .where((t) => t.isActive)

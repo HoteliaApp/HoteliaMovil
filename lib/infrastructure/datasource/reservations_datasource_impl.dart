@@ -6,8 +6,9 @@ import 'package:hotel_app/infrastructure/models/reservation/reservation_model.da
 /// Implementación concreta de [ReservationsDataSource] usando Firebase Firestore.
 class ReservationsDataSourceImpl implements ReservationsDataSource {
   final FirebaseFirestore _firestore;
+  final String hotelId;
 
-  ReservationsDataSourceImpl(this._firestore);
+  ReservationsDataSourceImpl(this._firestore, {this.hotelId = 'hotel_101'});
 
   CollectionReference<Map<String, dynamic>> get _reservations =>
       _firestore.collection('reservations');
@@ -18,7 +19,8 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
     String? guestId,
   }) async {
     try {
-      Query<Map<String, dynamic>> query = _reservations;
+      Query<Map<String, dynamic>> query =
+          _reservations.where('hotelId', isEqualTo: hotelId);
 
       if (status != null) {
         query = query.where('status', isEqualTo: status.name);
@@ -47,6 +49,11 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
       if (!doc.exists) throw Exception('Reservación no encontrada');
       
       final data = doc.data()!;
+      final docHotelId = data['hotelId'] as String?;
+      if (docHotelId != null && docHotelId != hotelId) {
+        throw Exception('La reservación no pertenece a este hotel');
+      }
+
       data['id'] = doc.id;
       return ReservationMapper.fromJson(data);
     } catch (e) {
@@ -62,6 +69,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   }) async {
     try {
       final activeQuery = await _reservations
+          .where('hotelId', isEqualTo: hotelId)
           .where('roomId', isEqualTo: roomId)
           .where('status', whereIn: ['confirmed', 'checkedIn', 'newReservation'])
           .get();
@@ -123,6 +131,9 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
       }
 
       final docRef = _reservations.doc();
+      final targetHotelId =
+          params.hotelId.isNotEmpty ? params.hotelId : hotelId;
+
       final reservation = ReservationModel(
         id: docRef.id,
         roomId: params.roomId,
@@ -136,6 +147,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
         total: params.total,
         createdAt: DateTime.now(),
         notes: params.notes,
+        hotelId: targetHotelId,
       );
 
       await docRef.set(reservation.toJson());

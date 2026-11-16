@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
+import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/reservations/reservations_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 
@@ -393,6 +394,7 @@ class _CreateReservationDialogState
                                   checkOut: _checkOut!,
                                   total: totalEstimated,
                                   notes: _notes,
+                                  hotelId: ref.read(currentHotelIdProvider),
                                 ),
                               );
 

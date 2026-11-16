@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/infrastructure/datasource/task_datasource_impl.dart';
+import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 
 /// Servicio heredado para compatibilidad.
 /// Delega directamente a la nueva arquitectura limpia a través de [TaskDataSource].
@@ -46,5 +47,8 @@ class FirebaseTaskService {
 /// Provider singleton heredado para retrocompatibilidad
 @Deprecated('Usar taskRepositoryProvider')
 final firebaseTaskServiceProvider = Provider<FirebaseTaskService>((ref) {
-  return FirebaseTaskService();
+  final hotelId = ref.watch(currentHotelIdProvider);
+  return FirebaseTaskService(
+    dataSource: TaskDataSourceImpl(hotelId: hotelId),
+  );
 });

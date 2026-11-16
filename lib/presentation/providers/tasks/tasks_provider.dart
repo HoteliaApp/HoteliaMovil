@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/infrastructure/infraestructure.dart';
+import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 
 // ─────────────────────────── Inyección de dependencias ────────────────────────
 
 /// Provider del datasource de tareas
 final taskDataSourceProvider = Provider<TaskDataSource>((ref) {
-  return TaskDataSourceImpl();
+  final hotelId = ref.watch(currentHotelIdProvider);
+  return TaskDataSourceImpl(hotelId: hotelId);
 });
 
 /// Provider del repositorio de tareas
