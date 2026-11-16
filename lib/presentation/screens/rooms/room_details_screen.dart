@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/router/app_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
+import 'package:hotel_app/infrastructure/models/rooms/room_model.dart';
 import 'package:hotel_app/presentation/providers/rooms/room_detail_provider.dart';
 import 'package:hotel_app/presentation/widgets/rooms/room_status_badge.dart';
 
@@ -57,6 +58,10 @@ class _RoomDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final rawImages = room.images.isNotEmpty
+        ? room.images
+        : [RoomModel.defaultRoomImageUrl(room.roomNumber)];
+    final images = rawImages.map(RoomModel.formatImageUrl).toList();
 
     return CustomScrollView(
       slivers: [
@@ -72,32 +77,13 @@ class _RoomDetailBody extends StatelessWidget {
                 shadows: [Shadow(blurRadius: 4, color: Colors.black45)],
               ),
             ),
-            background: room.images.isNotEmpty
-                ? PageView.builder(
-                    itemCount: room.images.length,
-                    itemBuilder: (context, index) {
-                      return Image.network(
-                        room.images[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, child, progress) => Container(
-                          color: AppColors.secondary.withValues(alpha: 0.4),
-                          child: const Icon(
-                            Icons.hotel,
-                            size: 80,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                /* 
-                  💡 TIP: Para cargar múltiples fotos y usar este carrusel,
-                  asegúrate de que `room.images` contenga múltiples URLs
-                  (ej. ['url1.jpg', 'url2.jpg', 'url3.jpg']). 
-                  Si deseas ver "puntitos" indicadores de página, se recomienda
-                  agregar la librería `carousel_slider` o usar un `SmoothPageIndicator`.
-                */
-                : Container(
+            background: PageView.builder(
+              itemCount: images.length,
+              itemBuilder: (context, index) {
+                return Image.network(
+                  images[index],
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, child, progress) => Container(
                     color: AppColors.secondary.withValues(alpha: 0.4),
                     child: const Icon(
                       Icons.hotel,
@@ -105,6 +91,9 @@ class _RoomDetailBody extends StatelessWidget {
                       color: AppColors.secondary,
                     ),
                   ),
+                );
+              },
+            ),
           ),
         ),
 
@@ -141,7 +130,7 @@ class _RoomDetailBody extends StatelessWidget {
                     icon: Icons.people_outline,
                     label: 'Capacidad',
                     value: '${room.capacity} pers.',
-                    color: const Color(0xFF2196F3), // Azul visible en claro/oscuro
+                    color: AppStatusColors.of(context).info,
                   ),
                 ],
               ),
@@ -228,7 +217,7 @@ class _InfoTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Row(

@@ -203,14 +203,14 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
               const SizedBox(height: 6),
               InkWell(
                 onTap: _pickCheckOutDate,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     border: Border.all(
                         color: theme.colorScheme.outline.withValues(alpha: 0.5)),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
@@ -241,7 +241,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.secondary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                       color: AppColors.secondary.withValues(alpha: 0.4)),
                 ),

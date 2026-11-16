@@ -70,9 +70,9 @@ class _TasksPanelHeader extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Tareas activas',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -81,7 +81,7 @@ class _TasksPanelHeader extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             '$totalCount activa${totalCount != 1 ? 's' : ''}',
@@ -106,10 +106,13 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final statusColors = AppStatusColors.of(context);
     final isInProgress = task.status == 'inProgress';
-    final color = isInProgress ? const Color(0xFF2196F3) : Colors.orange.shade700;
-    final statusIcon =
-        isInProgress ? Icons.play_circle_outline : Icons.schedule_rounded;
+    final color = isInProgress ? statusColors.info : statusColors.warning;
+    final statusIcon = isInProgress
+        ? Icons.play_circle_outline
+        : Icons.schedule_rounded;
 
     // Tiempo transcurrido formateado
     final elapsed = task.elapsedTime;
@@ -119,97 +122,108 @@ class _TaskCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // ── Ícono de tipo ──
-          Container(
-            width: 40,
-            height: 40,
+      child: Material(
+        color: isDark ? theme.cardColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(
-              _taskTypeIcon(task.taskType),
-              color: color,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // ── Información ──
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                // Habitación + tipo
-                Row(
+                // ── Ícono de tipo ──
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _taskTypeIcon(task.taskType),
+                    color: color,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // ── Información ──
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Habitación + tipo
+                      Row(
+                        children: [
+                          Text(
+                            'Hab. ${task.roomNumber}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _TypeChip(label: task.taskTypeLabel, color: color),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // Huésped
+                      Text(
+                        task.guestName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Estado + tiempo ──
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    Icon(statusIcon, size: 16, color: color),
+                    const SizedBox(height: 2),
                     Text(
-                      'Hab. ${task.roomNumber}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      elapsedStr,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    _TypeChip(label: task.taskTypeLabel, color: color),
                   ],
-                ),
-                const SizedBox(height: 2),
-                // Huésped
-                Text(
-                  task.guestName,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-
-          // ── Estado + tiempo ──
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Icon(statusIcon, size: 16, color: color),
-              const SizedBox(height: 2),
-              Text(
-                elapsedStr,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
   IconData _taskTypeIcon(String type) => switch (type) {
-        'cleaning' => Icons.cleaning_services_rounded,
-        'maintenance' => Icons.build_outlined,
-        'inspection' => Icons.search_rounded,
-        'delivery' => Icons.local_shipping_outlined,
-        'guest_request' => Icons.room_service_rounded,
-        _ => Icons.task_outlined,
-      };
+    'cleaning' => Icons.cleaning_services_rounded,
+    'maintenance' => Icons.build_outlined,
+    'inspection' => Icons.search_rounded,
+    'delivery' => Icons.local_shipping_outlined,
+    'guest_request' => Icons.room_service_rounded,
+    _ => Icons.task_outlined,
+  };
 }
 
 // ── Chip de tipo ──────────────────────────────────────────────────────────────
@@ -225,7 +239,7 @@ class _TypeChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         label,
@@ -271,24 +285,24 @@ class _TasksErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final errorColor = Theme.of(context).colorScheme.error;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+        color: errorColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: errorColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_outlined, size: 18, color: Colors.red),
+          Icon(Icons.warning_amber_outlined, size: 18, color: errorColor),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'No se pudo cargar tareas activas',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.red),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: errorColor),
             ),
           ),
         ],

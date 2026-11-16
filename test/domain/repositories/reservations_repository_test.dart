@@ -72,6 +72,7 @@ class MockReservationsDataSource implements ReservationsDataSource {
     final newReservation = Reservation(
       id: 'res-${mockReservations.length + 1}',
       roomId: params.roomId,
+      roomNumber: params.roomNumber,
       guestId: params.guestId,
       guestName: params.guestName,
       checkIn: params.checkIn,
@@ -140,6 +141,7 @@ void main() {
         Reservation(
           id: 'res-101-oct',
           roomId: 'room-101',
+          roomNumber: 101,
           guestId: 'guest-1',
           guestName: 'Carlos Gómez',
           checkIn: DateTime(2026, 10, 20),
@@ -175,6 +177,7 @@ void main() {
           () => repository.createReservation(
             CreateReservationParams(
               roomId: 'room-101',
+              roomNumber: 101,
               guestId: 'guest-2',
               guestName: 'Ana Ruiz',
               checkIn: DateTime(2026, 10, 22),
@@ -202,6 +205,7 @@ void main() {
         final newRes = await repository.createReservation(
           CreateReservationParams(
             roomId: 'room-101',
+            roomNumber: 101,
             guestId: 'guest-3',
             guestName: 'Luis Morales',
             checkIn: DateTime(2026, 10, 25),
@@ -261,6 +265,7 @@ void main() {
         final reservation = await repository.createReservation(
           CreateReservationParams(
             roomId: 'room-103',
+            roomNumber: 103,
             guestId: 'guest-4',
             guestName: 'María Torres',
             checkIn: DateTime(2026, 11, 1),

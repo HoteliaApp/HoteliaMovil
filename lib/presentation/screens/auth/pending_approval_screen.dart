@@ -66,7 +66,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               child: Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(16),
                   side: BorderSide(color: cs.outlineVariant),
                 ),
                 child: Padding(

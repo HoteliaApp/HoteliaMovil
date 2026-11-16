@@ -91,25 +91,30 @@ class CheckOutScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // ── Aviso ──
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.warning_amber_outlined, color: Colors.orange, size: 20),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Al confirmar, la habitación quedará disponible y la reservación se marcará como completada.',
-                      style: TextStyle(fontSize: 13),
-                    ),
+            Builder(
+              builder: (ctx) {
+                final warningColor = AppStatusColors.of(ctx).warning;
+                return Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: warningColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: warningColor.withValues(alpha: 0.4)),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_outlined, color: warningColor, size: 20),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Al confirmar, la habitación quedará disponible y la reservación se marcará como completada.',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             const Spacer(),
 
