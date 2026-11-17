@@ -17,4 +17,12 @@ abstract class RoomsDataSource {
   /// Emite la lista de habitaciones en tiempo real cada vez que Firestore
   /// notifica un cambio. Puede recibir filtros opcionales de [status] y [type].
   Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type});
+
+  /// Marca la habitación como limpia **solo si** sigue pendiente de limpieza
+  /// o en limpieza. Se resuelve en una transacción de Firestore, por lo que es
+  /// seguro ante escrituras concurrentes desde varios dispositivos.
+  ///
+  /// Devuelve `true` si la transacción efectuó el cambio, `false` si la
+  /// habitación ya estaba en otro estado y no se tocó.
+  Future<bool> markRoomCleanedIfPending(String roomId);
 }

@@ -64,6 +64,13 @@ check-out, o manualmente desde el diálogo de alertas) y las consume el reloj.
 | `notes` | string \| null | ✓ | Lo escribe el reloj al completar. `null` si no hay |
 | `schemaVersion` | number (int) | ✓ | `1` |
 
+> **Cierre del ciclo.** Cuando una tarea de `taskType: "cleaning"` pasa a
+> `status: "completed"`, la habitación referenciada por `roomId` pasa
+> automáticamente a `cleaned`, siempre que siguiera en `pendingCleaning` o
+> `cleaning`. Lo resuelve `TaskRoomSyncService` en la app móvil mediante una
+> transacción de Firestore. La operación es idempotente: el estado
+> de la habitación es el marcador, por lo que no se escribe nada en la tarea.
+
 ### Ciclo de vida de `status`
 
 ```

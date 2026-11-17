@@ -5,6 +5,7 @@ import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/domain/entities/user.dart';
+import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
 
 /// Scaffold principal que contiene la BottomNavigationBar y un menú lateral.
 class MainScaffold extends ConsumerWidget {
@@ -15,6 +16,10 @@ class MainScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(authProvider).role ?? UserRole.unassigned;
+
+    // Mantiene vivo el cierre automático del ciclo tarea-habitación mientras
+    // haya sesión activa.
+    ref.watch(taskRoomSyncServiceProvider);
 
     return Scaffold(
       body: navigationShell,

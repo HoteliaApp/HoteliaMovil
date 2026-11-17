@@ -26,4 +26,9 @@ class RoomsRepositoryImpl implements RoomsRepository {
   Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) {
     return _dataSource.watchRooms(status: status, type: type);
   }
+
+  @override
+  Future<bool> markRoomCleanedIfPending(String roomId) {
+    return _dataSource.markRoomCleanedIfPending(roomId);
+  }
 }

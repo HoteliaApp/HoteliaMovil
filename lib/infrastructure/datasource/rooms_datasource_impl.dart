@@ -69,6 +69,38 @@ class RoomsDataSourceImpl implements RoomsDataSource {
   }
 
   @override
+  Future<bool> markRoomCleanedIfPending(String roomId) async {
+    try {
+      return await _firestore.runTransaction<bool>((transaction) async {
+        final ref = _rooms.doc(roomId);
+        final snapshot = await transaction.get(ref);
+
+        if (!snapshot.exists) return false;
+
+        final data = snapshot.data();
+
+        // Aislamiento multi-inquilino (#24): no tocar habitaciones de otro hotel.
+        final docHotelId = data?['hotelId'] as String?;
+        if (docHotelId != null && docHotelId != hotelId) return false;
+
+        final current = data?['status'] as String?;
+
+        // Idempotencia por estado: solo avanza desde los estados de limpieza.
+        // Si la habitación ya está limpia, ocupada o disponible, no se toca.
+        final isPending = current == RoomStatus.pendingCleaning.name ||
+            current == RoomStatus.cleaning.name;
+
+        if (!isPending) return false;
+
+        transaction.update(ref, {'status': RoomStatus.cleaned.name});
+        return true;
+      });
+    } catch (e) {
+      throw Exception('Error al cerrar el ciclo de limpieza: $e');
+    }
+  }
+
+  @override
   Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) {
     Query<Map<String, dynamic>> query =
         _rooms.where('hotelId', isEqualTo: hotelId);
