@@ -23,4 +23,11 @@ abstract class TaskDataSource {
 
   /// Actualiza el estado de una tarea específica.
   Future<void> updateTaskStatus(String taskId, String status);
+
+  /// Emite las tareas completadas más recientes, de la más nueva a la más
+  /// antigua. Alimenta el cierre automático del ciclo tarea-habitación.
+  ///
+  /// La ventana es acotada a propósito: al abrir la app recupera lo que haya
+  /// ocurrido mientras estuvo cerrada, sin descargar el historial completo.
+  Stream<List<Task>> watchRecentlyCompletedTasks({int limit = 20});
 }

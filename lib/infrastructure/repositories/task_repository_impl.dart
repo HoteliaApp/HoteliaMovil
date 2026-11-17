@@ -46,4 +46,9 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<void> updateTaskStatus(String taskId, String status) {
     return _dataSource.updateTaskStatus(taskId, status);
   }
+
+    @override
+  Stream<List<Task>> watchRecentlyCompletedTasks({int limit = 20}) {
+    return _dataSource.watchRecentlyCompletedTasks(limit: limit);
+  }
 }

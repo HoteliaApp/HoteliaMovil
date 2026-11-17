@@ -170,6 +170,19 @@ class TaskDataSourceImpl implements TaskDataSource {
   }
 
   @override
+  Stream<List<Task>> watchRecentlyCompletedTasks({int limit = 20}) {
+    return _tasks
+        .where('hotelId', isEqualTo: hotelId)
+        .where('status', isEqualTo: 'completed')
+        .orderBy('completedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => TaskMapper.fromFirestore(doc.data(), doc.id))
+            .toList());
+  }
+
+  @override
   Future<void> updateTaskStatus(String taskId, String status) async {
     await _tasks.doc(taskId).update({
       'status': status,
