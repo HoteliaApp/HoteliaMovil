@@ -35,7 +35,10 @@ service cloud.firestore {
 
     // ── Inquilinos / Hoteles (/hotels/{hotelId}) ─────────────────────────────
     match /hotels/{hotelId} {
-      allow read, write: if belongsToTenant(hotelId);
+      allow read: if belongsToTenant(hotelId);
+      allow create: if belongsToTenant(hotelId)
+        || (isAuthenticated() && (!('hotelId' in request.auth.token)));
+      allow update, delete: if belongsToTenant(hotelId);
     }
 
     // ── Personal y Perfiles (/users/{userId}) ────────────────────────────────
@@ -47,7 +50,9 @@ service cloud.firestore {
                 || resource.data.hotelId == tokenHotelId()));
 
       allow create: if isAuthenticated()
-        && request.auth.uid == userId
+        && (request.auth.uid == userId
+            || belongsToTenant(request.resource.data.hotelId)
+            || (!('hotelId' in request.auth.token)))
         && (!('hotelId' in request.auth.token)
             || request.resource.data.hotelId == tokenHotelId());
 
@@ -60,7 +65,8 @@ service cloud.firestore {
     // ── Habitaciones (/rooms/{roomId}) ───────────────────────────────────────
     match /rooms/{roomId} {
       allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId)
+        || (isAuthenticated() && (!('hotelId' in request.auth.token)));
       allow update: if isSameTenantUpdate();
       allow delete: if belongsToTenant(resource.data.hotelId);
     }
@@ -92,7 +98,8 @@ service cloud.firestore {
     // ── Bitácora de Auditoría (/audit_logs/{logId}) ──────────────────────────
     match /audit_logs/{logId} {
       allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId)
+        || (isAuthenticated() && (!('hotelId' in request.auth.token)));
       allow update, delete: if false;
     }
 

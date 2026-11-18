@@ -14,6 +14,7 @@ abstract class AppRoutes {
   static const splash = '/splash';
   static const login = '/login';
   static const register = '/register';
+  static const onboarding = '/onboarding';
   static const pending = '/pending-approval';
   static const dashboard = '/dashboard';
 
@@ -55,10 +56,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       final isPublic = location == AppRoutes.login ||
           location == AppRoutes.splash ||
-          location == AppRoutes.register;
+          location == AppRoutes.register ||
+          location == AppRoutes.onboarding;
 
-      // No autenticado → redirige a login (salvo que ya esté ahí)
+      // No autenticado → permite rutas públicas, redirige a login en privadas
       if (!isAuthenticated && !isPublic) return AppRoutes.login;
+
+      // Si navega explícitamente a onboarding, permitirlo siempre
+      if (location == AppRoutes.onboarding) return null;
 
       if (isAuthenticated) {
         final role = authState.role;
@@ -132,6 +137,11 @@ final List<RouteBase> _routes = [
     path: AppRoutes.register,
     name: 'register',
     builder: (context, state) => const RegisterScreen(),
+  ),
+  GoRoute(
+    path: AppRoutes.onboarding,
+    name: 'onboarding',
+    builder: (context, state) => const HotelOnboardingWizardScreen(),
   ),
   GoRoute(
     path: AppRoutes.pending,

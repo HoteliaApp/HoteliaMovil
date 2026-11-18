@@ -217,3 +217,24 @@ Para evitar accesos cross-tenant desde cualquier cliente del ecosistema (`Hoteli
 | Cualquier otra ruta | Denegada (`false`) | Denegada (`false`) | Denegada (`false`) | Denegada (`false`) |
 
 En el cliente Flutter (`AuthNotifier`), `resolveTenantHotelId` prioriza `request.auth.token.hotelId` sobre `/users/{uid}.hotelId` y bloquea la sesión si detecta una discrepancia cross-tenant entre ambos.
+
+---
+
+## Onboarding Inicial y Alta Asistida de Nuevos Hoteles (Issue #25 / H-25)
+
+Para permitir a nuevos clientes hoteleros darse de alta en minutos sin soporte técnico presencial, se incorpora el **Wizard de Onboarding en 3 pasos** (`/onboarding`):
+
+```
+1. Datos del Hotel  ──>  2. Pisos, Habitaciones y Amenities  ──>  3. Usuarios Iniciales
+   (Nombre, Plan,           (Generación estándar y             (Dueño como Admin +
+    hotelId slug, pisos)     precios / amenities por piso)      personal inicial opcional)
+```
+
+### Persistencia Atómica en Lote (`WriteBatch`)
+
+Al completar el wizard, se ejecuta una transacción por lotes que registra atómicamente:
+1. **/hotels/{hotelId}:** Inquilino con `schemaVersion: 2`, `plan`, `floors` y datos comerciales.
+2. **/rooms/{roomId}:** Documentos de habitaciones generadas con numeración estándar (ej. 101, 102, 201...), tipos (`RoomType`), precios base, amenities y el `hotelId` correspondiente.
+3. **/users/{userId}:** Perfil del dueño con `role: admin`, `status: active` y su nuevo `hotelId`, junto con los miembros del equipo inicial.
+4. **/audit_logs/{logId}:** Registro de auditoría `HOTEL_ONBOARDING` que documenta el alta del hotel.
+

@@ -4,3 +4,4 @@ export 'task.dart';
 export 'user.dart';
 export 'hotel.dart';
 export 'audit_log.dart';
+export 'hotel_onboarding_data.dart';
