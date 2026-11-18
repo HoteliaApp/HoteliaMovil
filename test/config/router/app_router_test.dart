@@ -5,7 +5,9 @@ import 'package:hotel_app/config/router/app_router.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/admin/employees_provider.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
+import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
+import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
 import 'package:hotel_app/presentation/screens/auth/pending_approval_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -33,6 +35,9 @@ class FakeRoomsRepository implements RoomsRepository {
 
   @override
   Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) => Stream.value([]);
+
+  @override
+  Future<bool> markRoomCleanedIfPending(String roomId) async => false;
 }
 
 class FakeEmployeesRepository implements EmployeesRepository {
@@ -47,6 +52,78 @@ class FakeEmployeesRepository implements EmployeesRepository {
 
   @override
   Future<void> updateEmployeeRoleAndStatus(String userId, UserRole newRole, UserStatus newStatus) async {}
+}
+
+class FakeTaskRepository implements TaskRepository {
+  @override
+  Future<String> createCleaningTask({
+    required String roomId,
+    required int roomNumber,
+    required String guestName,
+  }) async =>
+      'task-id';
+
+  @override
+  Future<String> createManualAlert({
+    required String roomId,
+    required int roomNumber,
+    required String taskType,
+    required String description,
+    required String guestName,
+  }) async =>
+      'alert-id';
+
+  @override
+  Stream<List<Task>> watchActiveTasks() => Stream.value([]);
+
+  @override
+  Future<void> updateTaskStatus(String taskId, String status) async {}
+
+  @override
+  Stream<List<Task>> watchRecentlyCompletedTasks({int limit = 20}) =>
+      Stream.value([]);
+}
+
+class FakeReservationsRepository implements ReservationsRepository {
+  @override
+  Future<List<Reservation>> getReservations({
+    ReservationStatus? status,
+    String? guestId,
+  }) async =>
+      [];
+
+  @override
+  Future<Reservation> getReservationById(String id) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<Reservation?> getOverlappingReservation({
+    required String roomId,
+    required DateTime checkIn,
+    required DateTime checkOut,
+  }) async =>
+      null;
+
+  @override
+  Future<Reservation> createReservation(CreateReservationParams params) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<Reservation> checkIn({
+    required String reservationId,
+    required String guestName,
+    required int companions,
+    required DateTime expectedCheckOut,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<Reservation> checkOut(String reservationId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<Reservation> cancelReservation(String reservationId) async =>
+      throw UnimplementedError();
 }
 
 void main() {
@@ -79,6 +156,8 @@ void main() {
           authProvider.overrideWith(() => fakeAuth),
           roomsRepositoryProvider.overrideWithValue(FakeRoomsRepository()),
           employeesRepositoryProvider.overrideWithValue(FakeEmployeesRepository()),
+          taskRepositoryProvider.overrideWithValue(FakeTaskRepository()),
+          reservationsRepositoryProvider.overrideWithValue(FakeReservationsRepository()),
         ],
       );
       addTearDown(container.dispose);
@@ -141,6 +220,8 @@ void main() {
           authProvider.overrideWith(() => fakeAuth),
           roomsRepositoryProvider.overrideWithValue(FakeRoomsRepository()),
           employeesRepositoryProvider.overrideWithValue(FakeEmployeesRepository()),
+          taskRepositoryProvider.overrideWithValue(FakeTaskRepository()),
+          reservationsRepositoryProvider.overrideWithValue(FakeReservationsRepository()),
         ],
       );
       addTearDown(container.dispose);
@@ -224,6 +305,8 @@ void main() {
           authProvider.overrideWith(() => fakeAuth),
           roomsRepositoryProvider.overrideWithValue(FakeRoomsRepository()),
           employeesRepositoryProvider.overrideWithValue(FakeEmployeesRepository()),
+          taskRepositoryProvider.overrideWithValue(FakeTaskRepository()),
+          reservationsRepositoryProvider.overrideWithValue(FakeReservationsRepository()),
         ],
       );
       addTearDown(container.dispose);

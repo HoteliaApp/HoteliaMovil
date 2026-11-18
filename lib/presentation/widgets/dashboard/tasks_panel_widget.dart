@@ -13,38 +13,62 @@ class TasksPanelWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(activeTasksProvider);
 
-    return tasksAsync.when(
-      // Mientras carga → nada visible (el resto del dashboard ya tiene su loader)
-      loading: () => const SizedBox.shrink(),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: tasksAsync.when(
+        // Mientras carga → nada visible (el resto del dashboard ya tiene su loader)
+        loading: () => const SizedBox.shrink(key: ValueKey('tasks-loading')),
 
-      // Error de Firestore → aviso sutil, no bloqueante
-      error: (e, _) => _TasksErrorBanner(message: e.toString()),
+        // Error de Firestore → aviso sutil, no bloqueante
+        error: (e, _) => _TasksErrorBanner(
+          key: const ValueKey('tasks-error'),
+          message: e.toString(),
+        ),
 
-      data: (tasks) {
-        // Sin tareas activas → no mostrar la sección
-        if (tasks.isEmpty) return const SizedBox.shrink();
+        data: (tasks) {
+          // Sin tareas activas → no mostrar la sección
+          if (tasks.isEmpty) {
+            return const SizedBox.shrink(key: ValueKey('tasks-empty'));
+          }
 
-        // Hasta 4 tareas visibles en el panel
-        final visible = tasks.take(4).toList();
-        final hiddenCount = tasks.length - visible.length;
+          // Hasta 4 tareas visibles en el panel
+          final visible = tasks.take(4).toList();
+          final hiddenCount = tasks.length - visible.length;
+          final listKey = ValueKey<String>(
+            visible.map((t) => '${t.id}:${t.status}').join('|'),
+          );
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header de sección ──────────────────────────────────────────
-            _TasksPanelHeader(totalCount: tasks.length),
-            const SizedBox(height: 10),
+          return Column(
+            key: const ValueKey('tasks-panel'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header de sección ────────────────────────────────────────
+              _TasksPanelHeader(totalCount: tasks.length),
+              const SizedBox(height: 10),
 
-            // ── Tarjetas de tarea ──────────────────────────────────────────
-            ...visible.map((task) => _TaskCard(task: task)),
+              // ── Tarjetas de tarea ────────────────────────────────────────
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Column(
+                  key: listKey,
+                  children: [
+                    ...visible.map(
+                      (task) => _TaskCard(
+                        key: ValueKey<String>(task.id),
+                        task: task,
+                      ),
+                    ),
+                    // ── "Ver más" si hay más de 4 ──────────────────────────
+                    if (hiddenCount > 0) _MoreTasksBadge(count: hiddenCount),
+                  ],
+                ),
+              ),
 
-            // ── "Ver más" si hay más de 4 ──────────────────────────────────
-            if (hiddenCount > 0) _MoreTasksBadge(count: hiddenCount),
-
-            const SizedBox(height: 8),
-          ],
-        );
-      },
+              const SizedBox(height: 8),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -83,12 +107,16 @@ class _TasksPanelHeader extends StatelessWidget {
             color: AppColors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Text(
-            '$totalCount activa${totalCount != 1 ? 's' : ''}',
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Text(
+              '$totalCount activa${totalCount != 1 ? 's' : ''}',
+              key: ValueKey<int>(totalCount),
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -101,7 +129,7 @@ class _TasksPanelHeader extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final HotelTask task;
-  const _TaskCard({required this.task});
+  const _TaskCard({super.key, required this.task});
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +309,7 @@ class _MoreTasksBadge extends StatelessWidget {
 
 class _TasksErrorBanner extends StatelessWidget {
   final String message;
-  const _TasksErrorBanner({required this.message});
+  const _TasksErrorBanner({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {

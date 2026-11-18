@@ -67,11 +67,11 @@ class CheckInOutNotifier extends Notifier<CheckInOutState> {
 
   TaskRepository get _taskRepo => ref.read(taskRepositoryProvider);
 
-  /// Invalida todos los providers afectados por un cambio de estado.
+  /// Sincroniza alertas y reservaciones en el dashboard sin destruir el estado
+  /// de los streams reactivos (`roomsProvider`, `dashboardProvider`, `activeTasksProvider`),
+  /// permitiendo transiciones visuales suaves en tiempo real.
   void _invalidateAll() {
-    ref.invalidate(roomsProvider);
-    ref.invalidate(dashboardProvider);
-    ref.invalidate(activeTasksProvider);
+    ref.read(dashboardProvider.notifier).loadDashboard();
   }
 
   // ── Check-in ──────────────────────────────────────────────────────────────
