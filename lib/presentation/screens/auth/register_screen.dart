@@ -231,6 +231,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 : 'Crear cuenta'),
                           ),
                           const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () => context.push('/onboarding'),
+                            icon: const Icon(Icons.add_business),
+                            label: const Text('¿Eres dueño? Da de alta tu nuevo hotel'),
+                          ),
+                          const SizedBox(height: 8),
                           TextButton(
                             onPressed: () => context.go('/login'),
                             child: const Text('¿Ya tienes cuenta? Inicia sesión'),
