@@ -6,6 +6,7 @@ import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/entities/user.dart';
 import 'package:hotel_app/presentation/providers/admin/employees_provider.dart';
 import 'package:hotel_app/presentation/providers/providers.dart';
+import 'package:hotel_app/presentation/widgets/subscription/subscription.dart';
 import 'dart:math';
 
 class ProfileScreen extends ConsumerWidget {
@@ -268,12 +269,20 @@ class ProfileScreen extends ConsumerWidget {
 
                 // ── Panel de Administración ────────────────────────────────
                 if (authState.role == UserRole.admin) ...[
+                  const SubscriptionCard(),
+                  const SizedBox(height: 20),
                   _InfoCard(
                     children: [
                       _ActionRow(
                         icon: Icons.people_outline,
                         label: 'Administrar Empleados',
                         onTap: () => context.push('/admin/employees'),
+                      ),
+                      const Divider(height: 1),
+                      _ActionRow(
+                        icon: Icons.card_membership_outlined,
+                        label: 'Detalles de Suscripción SaaS',
+                        onTap: () => context.push('/admin/subscription'),
                       ),
                     ],
                   ),

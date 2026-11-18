@@ -11,4 +11,5 @@ export 'reservations/reservations_screen.dart';
 export 'profile/profile_screen.dart';
 export 'admin/employees_screen.dart';
 export 'admin/employee_detail_screen.dart';
+export 'admin/subscription_screen.dart';
 export 'onboarding/hotel_onboarding_wizard_screen.dart';
