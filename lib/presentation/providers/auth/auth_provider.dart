@@ -78,15 +78,59 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Resuelve el `hotelId` efectivo priorizando el Custom Claim del token JWT
+  /// (`request.auth.token.hotelId`) sobre el campo del documento `/users/{uid}`.
+  ///
+  /// Si ambos existen y no coinciden, lanza un [StateError] para bloquear el
+  /// acceso cross-tenant.
+  static String resolveTenantHotelId({
+    String? tokenClaimHotelId,
+    String? documentHotelId,
+  }) {
+    final claim = tokenClaimHotelId?.trim();
+    final doc = documentHotelId?.trim();
+
+    final hasClaim = claim != null && claim.isNotEmpty;
+    final hasDoc = doc != null && doc.isNotEmpty;
+
+    if (hasClaim && hasDoc && claim != doc) {
+      throw StateError(
+        'Acceso denegado: discrepancia cross-tenant entre el claim del token ($claim) y el documento ($doc).',
+      );
+    }
+
+    if (hasClaim) return claim;
+    if (hasDoc) return doc;
+    return 'hotel_101';
+  }
+
+  /// Extrae de forma segura el Custom Claim `hotelId` del usuario autenticado.
+  Future<String?> _readTokenClaimHotelId() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return null;
+      final tokenResult = await currentUser.getIdTokenResult();
+      final rawClaim = tokenResult.claims?['hotelId'];
+      if (rawClaim is String && rawClaim.trim().isNotEmpty) {
+        return rawClaim.trim();
+      }
+    } catch (_) {
+      // Tolera entornos de prueba sin Firebase Auth inicializado
+    }
+    return null;
+  }
+
   /// Escucha en tiempo real los cambios del documento /users/{uid} en Firestore.
   /// Esto permite reaccionar inmediatamente a aprobaciones de cuenta y cambios de rol.
   Future<void> _fetchAndListenUserDocument(String uid, String email) async {
     _userDocSubscription?.cancel();
 
+    final claimHotelId = await _readTokenClaimHotelId();
+
     // 1. Lectura inmediata para no retrasar el inicio de sesión
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      _updateStateFromSnapshot(doc, email);
+      _updateStateFromSnapshot(doc, email, claimHotelId: claimHotelId);
     } catch (_) {
       state = const AuthState(isAuthenticated: false, isLoading: false);
     }
@@ -98,7 +142,7 @@ class AuthNotifier extends Notifier<AuthState> {
         .snapshots()
         .listen(
       (doc) {
-        _updateStateFromSnapshot(doc, email);
+        _updateStateFromSnapshot(doc, email, claimHotelId: claimHotelId);
       },
       onError: (_) {
         state = const AuthState(isAuthenticated: false, isLoading: false);
@@ -108,8 +152,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
   void _updateStateFromSnapshot(
     DocumentSnapshot<Map<String, dynamic>> doc,
-    String email,
-  ) {
+    String email, {
+    String? claimHotelId,
+  }) {
     if (doc.exists) {
       final data = doc.data()!;
 
@@ -126,7 +171,20 @@ class AuthNotifier extends Notifier<AuthState> {
         orElse: () => UserStatus.pending,
       );
 
-      final hotelId = data['hotelId'] as String? ?? 'hotel_101';
+      final String hotelId;
+      try {
+        hotelId = resolveTenantHotelId(
+          tokenClaimHotelId: claimHotelId,
+          documentHotelId: data['hotelId'] as String?,
+        );
+      } catch (_) {
+        // Discrepancia cross-tenant entre token y documento: denegar acceso
+        state = const AuthState(isAuthenticated: false, isLoading: false);
+        try {
+          FirebaseAuth.instance.signOut();
+        } catch (_) {}
+        return;
+      }
 
       state = AuthState(
         isAuthenticated: true,

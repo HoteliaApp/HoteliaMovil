@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"hotel-project-7f0d0","appId":"1:492454003354:android:1494789a7977b7952b5523","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"hotel-project-7f0d0","configurations":{"android":"1:492454003354:android:1494789a7977b7952b5523","ios":"1:492454003354:ios:47ef1dd2784f72582b5523"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "hotel-project-7f0d0",
+          "appId": "1:492454003354:android:1494789a7977b7952b5523",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "hotel-project-7f0d0",
+          "configurations": {
+            "android": "1:492454003354:android:1494789a7977b7952b5523",
+            "ios": "1:492454003354:ios:47ef1dd2784f72582b5523"
+          }
+        }
+      }
+    }
+  }
+}

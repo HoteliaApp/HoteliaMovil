@@ -190,3 +190,30 @@ que determina a qué inquilino pertenece cada sesión.
 > sino en Flutter, igual que las otras dos apps, por lo que no hay dos lenguajes
 > que reconciliar. Lo que se entrega en su lugar es este contrato más los tres
 > mappers de Dart alineados a él, uno por repositorio.
+
+---
+
+## Aislamiento Estricto con Firebase Custom Claims (Issue #26 / H-26)
+
+Para evitar accesos cross-tenant desde cualquier cliente del ecosistema (`HoteliaMovil`, `HoteliaWear`, `HoteliaSmart`), las reglas de seguridad de Firestore (`firestore.rules`, referenciado en `firebase.json`) exigen el Custom Claim `hotelId` en el token JWT de Firebase Auth (`request.auth.token.hotelId`):
+
+```json
+{
+  "hotelId": "hotel_101"
+}
+```
+
+### Matriz de permisos en `firestore.rules`
+
+| Colección | Lectura (`read`) | Creación (`create`) | Actualización (`update`) | Eliminación (`delete`) |
+|---|---|---|---|---|
+| `/hotels/{hotelId}` | `belongsToTenant(hotelId)` | `belongsToTenant(hotelId)` | `belongsToTenant(hotelId)` | `belongsToTenant(hotelId)` |
+| `/users/{userId}` | Mismo `hotelId` o propio perfil autenticado | Propio `uid` con `hotelId` compatible | Mismo `hotelId` sin mutar `hotelId` | Denegada (`false`) |
+| `/rooms/{roomId}` | `belongsToTenant(resource.data.hotelId)` | `belongsToTenant(request.resource.data.hotelId)` | Mismo `hotelId` sin mutar `hotelId` | `belongsToTenant(resource.data.hotelId)` |
+| `/reservations/{id}` | `belongsToTenant(resource.data.hotelId)` | `belongsToTenant(request.resource.data.hotelId)` | Mismo `hotelId` sin mutar `hotelId` | `belongsToTenant(resource.data.hotelId)` |
+| `/tasks/{taskId}` | `belongsToTenant(resource.data.hotelId)` | `belongsToTenant(request.resource.data.hotelId)` | Mismo `hotelId` sin mutar `hotelId` | `belongsToTenant(resource.data.hotelId)` |
+| `/alerts/{alertId}` | `belongsToTenant(resource.data.hotelId)` | `belongsToTenant(request.resource.data.hotelId)` | Mismo `hotelId` sin mutar `hotelId` | `belongsToTenant(resource.data.hotelId)` |
+| `/audit_logs/{logId}` | `belongsToTenant(resource.data.hotelId)` | `belongsToTenant(request.resource.data.hotelId)` | Denegada (inmutable) | Denegada (inmutable) |
+| Cualquier otra ruta | Denegada (`false`) | Denegada (`false`) | Denegada (`false`) | Denegada (`false`) |
+
+En el cliente Flutter (`AuthNotifier`), `resolveTenantHotelId` prioriza `request.auth.token.hotelId` sobre `/users/{uid}.hotelId` y bloquea la sesión si detecta una discrepancia cross-tenant entre ambos.

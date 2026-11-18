@@ -61,6 +61,7 @@ class RoomsDataSourceImpl implements RoomsDataSource {
   @override
   Future<Room> updateRoomStatus(String id, RoomStatus newStatus) async {
     try {
+      await getRoomById(id);
       await _rooms.doc(id).update({'status': newStatus.name});
       return await getRoomById(id);
     } catch (e) {

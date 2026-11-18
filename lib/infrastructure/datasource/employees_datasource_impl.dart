@@ -27,12 +27,23 @@ class EmployeesDataSourceImpl implements EmployeesDataSource {
     });
   }
 
+  Future<void> _ensureSameTenantUser(String userId) async {
+    final doc = await _users.doc(userId).get();
+    if (doc.exists && doc.data() != null) {
+      final docHotelId = doc.data()!['hotelId'] as String?;
+      if (docHotelId != null && docHotelId != hotelId) {
+        throw Exception('Acceso denegado: el empleado no pertenece a este hotel');
+      }
+    }
+  }
+
   @override
   Future<void> updateEmployeeRoleAndStatus(
     String userId,
     UserRole newRole,
     UserStatus newStatus,
   ) async {
+    await _ensureSameTenantUser(userId);
     await _users.doc(userId).update({
       'role': newRole.name,
       'status': newStatus.name,
@@ -53,6 +64,7 @@ class EmployeesDataSourceImpl implements EmployeesDataSource {
 
   @override
   Future<void> linkWearablePin(String userId, String pin) async {
+    await _ensureSameTenantUser(userId);
     await _users.doc(userId).set({
       'wearablePin': pin,
       'pinCreatedAt': FieldValue.serverTimestamp(),
