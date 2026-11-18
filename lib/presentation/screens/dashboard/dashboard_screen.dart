@@ -143,7 +143,9 @@ class DashboardScreen extends ConsumerWidget {
               ],
             ),
 
-            if (state.isLoading)
+            if (state.isLoading &&
+                state.roomStats.total == 0 &&
+                state.activeTasks.isEmpty)
               SliverFillRemaining(
                 child: Center(
                   child: CircularProgressIndicator(
@@ -159,7 +161,10 @@ class DashboardScreen extends ConsumerWidget {
                     // ── Estadísticas de habitaciones ───────────────
                     _SectionTitle(title: 'Habitaciones'),
                     const SizedBox(height: 10),
-                    _RoomStatsGrid(stats: state.roomStats),
+                    _RoomStatsGrid(
+                      stats: state.roomStats,
+                      activeTasksCount: state.activeTasksCount,
+                    ),
                     const SizedBox(height: 24),
 
                     // ── Alertas (check-ins/outs próximos) ──────────
@@ -252,22 +257,30 @@ class _SectionTitle extends StatelessWidget {
             ),
           ],
         ),
-        if (subtitle != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              subtitle!,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: subtitle != null
+              ? Container(
+                  key: ValueKey<String>(subtitle!),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey<String>('empty-subtitle')),
+        ),
       ],
     );
   }
@@ -275,7 +288,12 @@ class _SectionTitle extends StatelessWidget {
 
 class _RoomStatsGrid extends StatelessWidget {
   final RoomStats stats;
-  const _RoomStatsGrid({required this.stats});
+  final int activeTasksCount;
+
+  const _RoomStatsGrid({
+    required this.stats,
+    required this.activeTasksCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +321,12 @@ class _RoomStatsGrid extends StatelessWidget {
           color: statusColors.danger,
         ),
         _StatCard(
+          label: 'Pendientes de limpieza',
+          value: stats.pendingCleaning,
+          icon: Icons.cleaning_services_outlined,
+          color: statusColors.warning,
+        ),
+        _StatCard(
           label: 'Reservadas',
           value: stats.reserved,
           icon: Icons.bookmark_rounded,
@@ -312,7 +336,13 @@ class _RoomStatsGrid extends StatelessWidget {
           label: 'Mantenimiento',
           value: stats.maintenance,
           icon: Icons.build_outlined,
-          color: statusColors.warning,
+          color: statusColors.neutral,
+        ),
+        _StatCard(
+          label: 'Tareas activas',
+          value: activeTasksCount,
+          icon: Icons.assignment_turned_in_outlined,
+          color: statusColors.purple,
         ),
       ],
     );
@@ -357,25 +387,37 @@ class _StatCard extends StatelessWidget {
                 child: Icon(icon, color: color, size: 18),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$value',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: color,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(scale: animation, child: child),
+                      ),
+                      child: Text(
+                        '$value',
+                        key: ValueKey<int>(value),
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: color.withValues(alpha: 0.8),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color.withValues(alpha: 0.8),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

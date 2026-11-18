@@ -61,6 +61,13 @@ class MockTaskDataSource implements TaskDataSource {
   }
 
   @override
+  Stream<List<Task>> watchRecentlyCompletedTasks({int limit = 20}) {
+    return Stream.value(
+      mockTasks.where((t) => t.status == 'completed').take(limit).toList(),
+    );
+  }
+
+  @override
   Future<void> updateTaskStatus(String taskId, String status) async {
     lastUpdatedTaskId = taskId;
     lastUpdatedStatus = status;

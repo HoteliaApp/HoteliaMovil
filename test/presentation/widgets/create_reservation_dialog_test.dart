@@ -24,6 +24,9 @@ class FakeRoomsRepository implements RoomsRepository {
   @override
   Stream<List<Room>> watchRooms({RoomStatus? status, RoomType? type}) =>
       Stream.value(rooms);
+
+  @override
+  Future<bool> markRoomCleanedIfPending(String roomId) async => false;
 }
 
 class FakeReservationsRepository implements ReservationsRepository {

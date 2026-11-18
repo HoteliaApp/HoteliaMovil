@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dart';
+import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
 
 // ───────────────────────────── Modelos ────────────────────────────────────────
 
@@ -10,6 +13,8 @@ class RoomStats {
   final int available;
   final int occupied;
   final int reserved;
+  final int pendingCleaning;
+  final int cleaned;
   final int maintenance;
   final int total;
 
@@ -17,9 +22,55 @@ class RoomStats {
     this.available = 0,
     this.occupied = 0,
     this.reserved = 0,
+    this.pendingCleaning = 0,
+    this.cleaned = 0,
     this.maintenance = 0,
     this.total = 0,
   });
+
+  int get cleaning => pendingCleaning;
+
+  factory RoomStats.fromRooms(List<Room> rooms) {
+    return RoomStats(
+      available: rooms.where((r) => r.status == RoomStatus.available).length,
+      occupied: rooms.where((r) => r.status == RoomStatus.occupied).length,
+      reserved: rooms.where((r) => r.status == RoomStatus.reserved).length,
+      pendingCleaning: rooms
+          .where(
+            (r) =>
+                r.status == RoomStatus.pendingCleaning ||
+                r.status == RoomStatus.cleaning,
+          )
+          .length,
+      cleaned: rooms.where((r) => r.status == RoomStatus.cleaned).length,
+      maintenance: rooms.where((r) => r.status == RoomStatus.outOfOrder).length,
+      total: rooms.length,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is RoomStats &&
+        other.available == available &&
+        other.occupied == occupied &&
+        other.reserved == reserved &&
+        other.pendingCleaning == pendingCleaning &&
+        other.cleaned == cleaned &&
+        other.maintenance == maintenance &&
+        other.total == total;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        available,
+        occupied,
+        reserved,
+        pendingCleaning,
+        cleaned,
+        maintenance,
+        total,
+      );
 }
 
 /// Alerta de actividad próxima (check-in o check-out)
@@ -52,6 +103,7 @@ class DashboardAlert {
 
 class DashboardState {
   final RoomStats roomStats;
+  final List<Task> activeTasks;
   final List<DashboardAlert> alerts;
   final List<Reservation> upcomingReservations;
   final bool isLoading;
@@ -59,14 +111,18 @@ class DashboardState {
 
   const DashboardState({
     this.roomStats = const RoomStats(),
+    this.activeTasks = const [],
     this.alerts = const [],
     this.upcomingReservations = const [],
     this.isLoading = false,
     this.errorMessage,
   });
 
+  int get activeTasksCount => activeTasks.length;
+
   DashboardState copyWith({
     RoomStats? roomStats,
+    List<Task>? activeTasks,
     List<DashboardAlert>? alerts,
     List<Reservation>? upcomingReservations,
     bool? isLoading,
@@ -75,6 +131,7 @@ class DashboardState {
   }) {
     return DashboardState(
       roomStats: roomStats ?? this.roomStats,
+      activeTasks: activeTasks ?? this.activeTasks,
       alerts: alerts ?? this.alerts,
       upcomingReservations: upcomingReservations ?? this.upcomingReservations,
       isLoading: isLoading ?? this.isLoading,
@@ -86,37 +143,78 @@ class DashboardState {
 // ─────────────────────────── Notifier ────────────────────────────────────────
 
 class DashboardNotifier extends Notifier<DashboardState> {
+  StreamSubscription<List<Room>>? _roomsSub;
+  StreamSubscription<List<Task>>? _tasksSub;
+  bool _disposed = false;
+
   @override
   DashboardState build() {
-    Future.microtask(loadDashboard);
-    return const DashboardState();
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+      _roomsSub?.cancel();
+      _tasksSub?.cancel();
+    });
+    Future.microtask(_initDashboard);
+    return const DashboardState(isLoading: true);
   }
 
   RoomsRepository get _roomsRepo => ref.read(roomsRepositoryProvider);
   ReservationsRepository get _reservationsRepo =>
       ref.read(reservationsRepositoryProvider);
+  TaskRepository get _taskRepo => ref.read(taskRepositoryProvider);
 
-  /// Carga todas las estadísticas y alertas del dashboard
-  Future<void> loadDashboard() async {
-    state = state.copyWith(isLoading: true, clearError: true);
+  void _initDashboard() {
+    if (_disposed) return;
+    _subscribeToStreams();
+    _loadReservationsAndAlerts();
+  }
+
+  void _subscribeToStreams() {
+    _roomsSub?.cancel();
+    _roomsSub = _roomsRepo.watchRooms().listen(
+      (rooms) {
+        if (_disposed) return;
+        final stats = RoomStats.fromRooms(rooms);
+        state = state.copyWith(
+          roomStats: stats,
+          isLoading: false,
+          clearError: true,
+        );
+        _loadReservationsAndAlerts();
+      },
+      onError: (Object e) {
+        if (_disposed) return;
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        );
+      },
+    );
+
     try {
-      final results = await Future.wait([
-        _roomsRepo.getRooms(),
-        _reservationsRepo.getReservations(),
-      ]);
-
-      final rooms = results[0] as List<Room>;
-      final reservations = results[1] as List<Reservation>;
-
-      // Estadísticas de habitaciones
-      final stats = RoomStats(
-        available: rooms.where((r) => r.status == RoomStatus.available).length,
-        occupied: rooms.where((r) => r.status == RoomStatus.occupied).length,
-        reserved: rooms.where((r) => r.status == RoomStatus.reserved).length,
-        maintenance:
-            rooms.where((r) => r.status == RoomStatus.outOfOrder).length,
-        total: rooms.length,
+      _tasksSub?.cancel();
+      _tasksSub = _taskRepo.watchActiveTasks().listen(
+        (tasks) {
+          if (_disposed) return;
+          state = state.copyWith(
+            activeTasks: tasks,
+            isLoading: false,
+          );
+        },
+        onError: (_) {
+          // Errores de stream de tareas se reflejan en el panel dedicado
+        },
       );
+    } catch (_) {
+      // Tolerar entornos de prueba donde taskRepositoryProvider no esté disponible
+    }
+  }
+
+  Future<void> _loadReservationsAndAlerts() async {
+    try {
+      final reservations = await _reservationsRepo.getReservations();
+      if (_disposed) return;
 
       // Reservaciones próximas (activas en los próximos 2 días)
       final now = DateTime.now();
@@ -165,18 +263,37 @@ class DashboardNotifier extends Notifier<DashboardState> {
         }
       }
 
+      if (_disposed) return;
       state = state.copyWith(
-        roomStats: stats,
         upcomingReservations: upcoming,
         alerts: alerts,
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
-      );
+      if (_disposed) return;
+      if (state.roomStats.total == 0) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        );
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
     }
+  }
+
+  /// Carga/refresca todas las estadísticas y alertas del dashboard
+  Future<void> loadDashboard() async {
+    if (_disposed) return;
+    final hasExistingData =
+        state.roomStats.total > 0 || state.activeTasks.isNotEmpty;
+    if (!hasExistingData) {
+      state = state.copyWith(isLoading: true, clearError: true);
+    } else {
+      state = state.copyWith(clearError: true);
+    }
+    _subscribeToStreams();
+    await _loadReservationsAndAlerts();
   }
 }
 
