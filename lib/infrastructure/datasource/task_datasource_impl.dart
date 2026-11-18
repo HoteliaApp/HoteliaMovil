@@ -184,6 +184,14 @@ class TaskDataSourceImpl implements TaskDataSource {
 
   @override
   Future<void> updateTaskStatus(String taskId, String status) async {
+    final doc = await _tasks.doc(taskId).get();
+    if (doc.exists && doc.data() != null) {
+      final docHotelId = doc.data()!['hotelId'] as String?;
+      if (docHotelId != null && docHotelId != hotelId) {
+        throw Exception('Acceso denegado: la tarea no pertenece a este hotel');
+      }
+    }
+
     await _tasks.doc(taskId).update({
       'status': status,
       if (status == 'completed')

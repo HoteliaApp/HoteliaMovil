@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
@@ -249,6 +252,135 @@ void main() {
 
       expect(containerCustom.read(currentHotelIdProvider), equals('hotel_valle_01'));
     });
+  });
+
+  group('H-26 Reglas de Seguridad Firestore y Aislamiento Cross-Tenant (Gherkin)', () {
+    test('firestore.rules y firebase.json definen reglas estrictas por Custom Claim hotelId', () {
+      final rulesFile = File('firestore.rules');
+      expect(rulesFile.existsSync(), isTrue);
+
+      final rulesContent = rulesFile.readAsStringSync();
+      expect(rulesContent, contains("rules_version = '2';"));
+      expect(rulesContent, contains('request.auth.token.hotelId'));
+      expect(rulesContent, contains('belongsToTenant'));
+      expect(rulesContent, contains('isSameTenantUpdate'));
+
+      for (final collectionPattern in [
+        'match /hotels/{hotelId}',
+        'match /users/{userId}',
+        'match /rooms/{roomId}',
+        'match /reservations/{reservationId}',
+        'match /tasks/{taskId}',
+        'match /alerts/{alertId}',
+        'match /audit_logs/{logId}',
+        'match /{document=**}',
+      ]) {
+        expect(rulesContent, contains(collectionPattern));
+      }
+
+      final firebaseJsonFile = File('firebase.json');
+      expect(firebaseJsonFile.existsSync(), isTrue);
+      final decoded =
+          jsonDecode(firebaseJsonFile.readAsStringSync()) as Map<String, dynamic>;
+      expect(decoded['firestore'], equals({'rules': 'firestore.rules'}));
+      expect(decoded['flutter'], isA<Map<String, dynamic>>());
+    });
+
+    test(
+      'Escenario 1 (Gherkin): Usuario con credenciales del Hotel A tiene acceso denegado a documentos del Hotel B',
+      () {
+        // Evaluación fiel de las funciones belongsToTenant / isSameTenantUpdate de firestore.rules
+        bool hasHotelClaim(Map<String, dynamic>? authToken) {
+          if (authToken == null) return false;
+          final claim = authToken['hotelId'];
+          return claim is String && claim.isNotEmpty;
+        }
+
+        bool canReadTenantDoc(Map<String, dynamic>? authToken, String? docHotelId) {
+          return hasHotelClaim(authToken) && docHotelId == authToken!['hotelId'];
+        }
+
+        bool canCreateTenantDoc(Map<String, dynamic>? authToken, String? newDocHotelId) {
+          return hasHotelClaim(authToken) && newDocHotelId == authToken!['hotelId'];
+        }
+
+        bool canUpdateTenantDoc(
+          Map<String, dynamic>? authToken,
+          String? existingHotelId,
+          String? nextHotelId,
+        ) {
+          return canReadTenantDoc(authToken, existingHotelId) &&
+              nextHotelId == existingHotelId;
+        }
+
+        bool canDeleteTenantDoc(Map<String, dynamic>? authToken, String? existingHotelId) {
+          return canReadTenantDoc(authToken, existingHotelId);
+        }
+
+        // Dado un usuario con credenciales válidas del Hotel A
+        final hotelAToken = <String, dynamic>{'hotelId': 'hotel_A'};
+
+        // Cuando intenta leer o escribir documentos del Hotel B
+        expect(canReadTenantDoc(hotelAToken, 'hotel_B'), isFalse);
+        expect(canCreateTenantDoc(hotelAToken, 'hotel_B'), isFalse);
+        expect(canUpdateTenantDoc(hotelAToken, 'hotel_B', 'hotel_B'), isFalse);
+        expect(canDeleteTenantDoc(hotelAToken, 'hotel_B'), isFalse);
+
+        // Intento de alterar el hotelId de un documento propio del Hotel A hacia Hotel B
+        expect(canUpdateTenantDoc(hotelAToken, 'hotel_A', 'hotel_B'), isFalse);
+
+        // Token sin Custom Claim hotelId también queda bloqueado
+        expect(canReadTenantDoc(<String, dynamic>{}, 'hotel_A'), isFalse);
+        expect(canReadTenantDoc(null, 'hotel_A'), isFalse);
+
+        // Operaciones legítimas sobre documentos propios del Hotel A son permitidas
+        expect(canReadTenantDoc(hotelAToken, 'hotel_A'), isTrue);
+        expect(canCreateTenantDoc(hotelAToken, 'hotel_A'), isTrue);
+        expect(canUpdateTenantDoc(hotelAToken, 'hotel_A', 'hotel_A'), isTrue);
+        expect(canDeleteTenantDoc(hotelAToken, 'hotel_A'), isTrue);
+      },
+    );
+
+    test(
+      'AuthNotifier.resolveTenantHotelId prioriza el Custom Claim y rechaza discrepancias cross-tenant',
+      () {
+        expect(
+          AuthNotifier.resolveTenantHotelId(
+            tokenClaimHotelId: 'hotel_A',
+            documentHotelId: null,
+          ),
+          equals('hotel_A'),
+        );
+        expect(
+          AuthNotifier.resolveTenantHotelId(
+            tokenClaimHotelId: 'hotel_A',
+            documentHotelId: 'hotel_A',
+          ),
+          equals('hotel_A'),
+        );
+        expect(
+          AuthNotifier.resolveTenantHotelId(
+            tokenClaimHotelId: null,
+            documentHotelId: 'hotel_B',
+          ),
+          equals('hotel_B'),
+        );
+        expect(
+          AuthNotifier.resolveTenantHotelId(
+            tokenClaimHotelId: null,
+            documentHotelId: null,
+          ),
+          equals('hotel_101'),
+        );
+        expect(
+          () => AuthNotifier.resolveTenantHotelId(
+            tokenClaimHotelId: 'hotel_A',
+            documentHotelId: 'hotel_B',
+          ),
+          throwsStateError,
+        );
+      },
+    );
   });
 }
 

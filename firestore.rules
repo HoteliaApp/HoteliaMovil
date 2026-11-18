@@ -1,0 +1,104 @@
+rules_version = '2';
+
+// Reglas de seguridad Firestore para aislamiento estricto multi-inquilino (H-26).
+// Compartidas por HoteliaMovil, HoteliaWear y HoteliaSmart.
+// Verifican el inquilino directamente desde el Firebase Custom Claim:
+//   request.auth.token.hotelId
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Funciones auxiliares de autenticación y tenant ───────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function tokenHotelId() {
+      return request.auth.token.hotelId;
+    }
+
+    function hasHotelClaim() {
+      return isAuthenticated()
+        && ('hotelId' in request.auth.token)
+        && request.auth.token.hotelId is string
+        && request.auth.token.hotelId.size() > 0;
+    }
+
+    function belongsToTenant(docHotelId) {
+      return hasHotelClaim() && docHotelId == tokenHotelId();
+    }
+
+    function isSameTenantUpdate() {
+      return belongsToTenant(resource.data.hotelId)
+        && request.resource.data.hotelId == resource.data.hotelId;
+    }
+
+    // ── Inquilinos / Hoteles (/hotels/{hotelId}) ─────────────────────────────
+    match /hotels/{hotelId} {
+      allow read, write: if belongsToTenant(hotelId);
+    }
+
+    // ── Personal y Perfiles (/users/{userId}) ────────────────────────────────
+    match /users/{userId} {
+      allow read: if belongsToTenant(resource.data.hotelId)
+        || (isAuthenticated()
+            && request.auth.uid == userId
+            && (!('hotelId' in request.auth.token)
+                || resource.data.hotelId == tokenHotelId()));
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && (!('hotelId' in request.auth.token)
+            || request.resource.data.hotelId == tokenHotelId());
+
+      allow update: if belongsToTenant(resource.data.hotelId)
+        && request.resource.data.hotelId == resource.data.hotelId;
+
+      allow delete: if false;
+    }
+
+    // ── Habitaciones (/rooms/{roomId}) ───────────────────────────────────────
+    match /rooms/{roomId} {
+      allow read: if belongsToTenant(resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow update: if isSameTenantUpdate();
+      allow delete: if belongsToTenant(resource.data.hotelId);
+    }
+
+    // ── Reservaciones (/reservations/{reservationId}) ────────────────────────
+    match /reservations/{reservationId} {
+      allow read: if belongsToTenant(resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow update: if isSameTenantUpdate();
+      allow delete: if belongsToTenant(resource.data.hotelId);
+    }
+
+    // ── Tareas Operativas (/tasks/{taskId}) ──────────────────────────────────
+    match /tasks/{taskId} {
+      allow read: if belongsToTenant(resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow update: if isSameTenantUpdate();
+      allow delete: if belongsToTenant(resource.data.hotelId);
+    }
+
+    // ── Alertas para Wearable y Smart TV (/alerts/{alertId}) ─────────────────
+    match /alerts/{alertId} {
+      allow read: if belongsToTenant(resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow update: if isSameTenantUpdate();
+      allow delete: if belongsToTenant(resource.data.hotelId);
+    }
+
+    // ── Bitácora de Auditoría (/audit_logs/{logId}) ──────────────────────────
+    match /audit_logs/{logId} {
+      allow read: if belongsToTenant(resource.data.hotelId);
+      allow create: if belongsToTenant(request.resource.data.hotelId);
+      allow update, delete: if false;
+    }
+
+    // ── Denegación explícita por defecto para cualquier otra colección ───────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

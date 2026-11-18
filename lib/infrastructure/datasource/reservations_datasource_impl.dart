@@ -110,6 +110,12 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   @override
   Future<Reservation> createReservation(CreateReservationParams params) async {
     try {
+      if (params.hotelId.isNotEmpty && params.hotelId != hotelId) {
+        throw Exception(
+          'Acceso denegado: no se puede crear una reservación para otro hotel',
+        );
+      }
+
       final newIn = DateTime(params.checkIn.year, params.checkIn.month, params.checkIn.day);
       final newOut = DateTime(params.checkOut.year, params.checkOut.month, params.checkOut.day);
 
@@ -166,6 +172,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
     required DateTime expectedCheckOut,
   }) async {
     try {
+      await getReservationById(reservationId);
       await _reservations.doc(reservationId).update({
         'status': ReservationStatus.checkedIn.name,
         'guestName': guestName,
@@ -181,6 +188,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   @override
   Future<Reservation> checkOut(String reservationId) async {
     try {
+      await getReservationById(reservationId);
       await _reservations.doc(reservationId).update({
         'status': ReservationStatus.completed.name,
       });
@@ -193,6 +201,7 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   @override
   Future<Reservation> cancelReservation(String reservationId) async {
     try {
+      await getReservationById(reservationId);
       await _reservations.doc(reservationId).update({
         'status': ReservationStatus.cancelled.name,
       });
