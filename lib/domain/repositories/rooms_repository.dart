@@ -24,4 +24,7 @@ abstract class RoomsRepository {
   /// Devuelve `true` si la transacción efectuó el cambio, `false` si la
   /// habitación ya estaba en otro estado y no se tocó.
   Future<bool> markRoomCleanedIfPending(String roomId);
+
+  /// Da de alta una nueva habitación para este hotel.
+  Future<void> createRoom(Room room);
 }

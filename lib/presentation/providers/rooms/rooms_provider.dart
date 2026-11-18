@@ -166,6 +166,18 @@ class RoomsNotifier extends Notifier<RoomsState> {
       );
     }
   }
+
+  /// Da de alta una nueva habitación para el hotel.
+  Future<void> createRoom(Room room) async {
+    try {
+      await _repository.createRoom(room);
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+      );
+      rethrow;
+    }
+  }
 }
 
 /// Provider del listado de habitaciones

@@ -31,4 +31,9 @@ class RoomsRepositoryImpl implements RoomsRepository {
   Future<bool> markRoomCleanedIfPending(String roomId) {
     return _dataSource.markRoomCleanedIfPending(roomId);
   }
+
+  @override
+  Future<void> createRoom(Room room) {
+    return _dataSource.createRoom(room);
+  }
 }

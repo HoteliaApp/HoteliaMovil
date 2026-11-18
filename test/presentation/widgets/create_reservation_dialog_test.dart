@@ -27,6 +27,11 @@ class FakeRoomsRepository implements RoomsRepository {
 
   @override
   Future<bool> markRoomCleanedIfPending(String roomId) async => false;
+
+  @override
+  Future<void> createRoom(Room room) async {
+    rooms.add(room);
+  }
 }
 
 class FakeReservationsRepository implements ReservationsRepository {

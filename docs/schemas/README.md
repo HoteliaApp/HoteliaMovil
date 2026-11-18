@@ -238,3 +238,19 @@ Al completar el wizard, se ejecuta una transacción por lotes que registra atóm
 3. **/users/{userId}:** Perfil del dueño con `role: admin`, `status: active` y su nuevo `hotelId`, junto con los miembros del equipo inicial.
 4. **/audit_logs/{logId}:** Registro de auditoría `HOTEL_ONBOARDING` que documenta el alta del hotel.
 
+---
+
+## Planes y Límites de Suscripción SaaS (Issue #29 / H-29)
+
+Control de cotas y límites contratados en el documento `/hotels/{hotelId}`:
+
+| Plan | Límite Habitaciones (`maxRooms`) | Límite Usuarios (`maxUsers`) | Alcance Operativo |
+|---|:---:|:---:|---|
+| **Básico** (`basic`) | 20 | 5 | Gestión esencial de habitaciones y reservaciones |
+| **Intermedio** (`standard`) | 50 | 15 | Multi-piso, sincronización con Smartwatch (Wear OS) y Smart TV |
+| **Premium** (`premium`) | 150 | 50 | Soporte prioritario, analítica avanzada y todas las integraciones |
+
+### Regla de Validación de Altas de Habitaciones (Gherkin Escenario 1)
+Antes de persistir una nueva habitación en `/rooms/{roomId}`, el cliente valida el documento de suscripción activo (`hotelSubscriptionProvider`). Si el hotel cuenta con plan Básico y ya tiene 20 habitaciones, el intento de dar de alta la habitación 21 detiene el proceso y muestra el diálogo modal de **Límite de habitaciones alcanzado** con la opción de solicitar mejora de plan (`REQUEST_PLAN_CHANGE`).
+
+

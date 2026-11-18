@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
+import 'package:hotel_app/domain/entities/user.dart';
+import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
+import 'package:hotel_app/presentation/providers/subscription/subscription_provider.dart';
+import 'package:hotel_app/presentation/widgets/rooms/create_room_dialog.dart';
 import 'package:hotel_app/presentation/widgets/rooms/room_card.dart';
 import 'package:hotel_app/presentation/widgets/rooms/room_filter_bar.dart';
+import 'package:hotel_app/presentation/widgets/subscription/change_plan_dialog.dart';
+import 'package:hotel_app/presentation/widgets/subscription/room_limit_reached_dialog.dart';
 
 /// Pantalla principal del módulo de habitaciones
 class RoomsScreen extends ConsumerWidget {
@@ -14,6 +20,8 @@ class RoomsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(roomsProvider);
     final notifier = ref.read(roomsProvider.notifier);
+    final authState = ref.watch(authProvider);
+    final isAdmin = authState.role == UserRole.admin;
 
     return Scaffold(
       appBar: AppBar(
@@ -26,6 +34,36 @@ class RoomsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton.extended(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('Nueva habitación'),
+              onPressed: () {
+                final subscription = ref.read(hotelSubscriptionProvider);
+                if (subscription.isRoomsLimitReached) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => RoomLimitReachedDialog(
+                      currentRooms: subscription.currentRooms,
+                      maxRooms: subscription.maxRooms,
+                      currentPlan: subscription.planLabel,
+                      onUpgrade: () => showDialog(
+                        context: context,
+                        builder: (_) => const ChangePlanDialog(),
+                      ),
+                    ),
+                  );
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (_) => const CreateRoomDialog(),
+                  );
+                }
+              },
+            )
+          : null,
       body: Column(
         children: [
           const SizedBox(height: 12),

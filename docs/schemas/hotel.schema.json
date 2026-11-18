@@ -48,6 +48,23 @@
       "enum": ["basic", "standard", "premium"],
       "description": "Nivel de suscripción SaaS del hotel."
     },
+    "maxRooms": {
+      "type": "integer",
+      "description": "Límite máximo de habitaciones contratadas en el plan SaaS."
+    },
+    "maxUsers": {
+      "type": "integer",
+      "description": "Límite máximo de usuarios operativos contratados en el plan SaaS."
+    },
+    "requestedPlan": {
+      "type": "string",
+      "description": "Plan SaaS solicitado en proceso de cambio o mejora."
+    },
+    "planChangeRequestedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora en ISO 8601 UTC en que se solicitó el cambio de plan."
+    },
     "schemaVersion": {
       "type": "integer",
       "const": 2,

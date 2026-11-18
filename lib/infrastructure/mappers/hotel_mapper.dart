@@ -16,6 +16,14 @@ class HotelMapper {
       createdAt = DateTime.now();
     }
 
+    DateTime? planChangeRequestedAt;
+    final rawPlanReq = data['planChangeRequestedAt'];
+    if (rawPlanReq is Timestamp) {
+      planChangeRequestedAt = rawPlanReq.toDate();
+    } else if (rawPlanReq is String) {
+      planChangeRequestedAt = DateTime.tryParse(rawPlanReq);
+    }
+
     return Hotel(
       id: id,
       name: data['name'] as String? ?? 'Hotel Sin Nombre',
@@ -24,6 +32,10 @@ class HotelMapper {
       createdAt: createdAt,
       plan: data['plan'] as String? ?? 'standard',
       schemaVersion: (data['schemaVersion'] as num?)?.toInt() ?? 2,
+      customMaxRooms: (data['maxRooms'] as num?)?.toInt(),
+      customMaxUsers: (data['maxUsers'] as num?)?.toInt(),
+      requestedPlan: data['requestedPlan'] as String?,
+      planChangeRequestedAt: planChangeRequestedAt,
     );
   }
 
@@ -36,6 +48,12 @@ class HotelMapper {
       'createdAt': hotel.createdAt.toIso8601String(),
       'plan': hotel.plan,
       'schemaVersion': hotel.schemaVersion,
+      if (hotel.customMaxRooms != null) 'maxRooms': hotel.customMaxRooms,
+      if (hotel.customMaxUsers != null) 'maxUsers': hotel.customMaxUsers,
+      if (hotel.requestedPlan != null) 'requestedPlan': hotel.requestedPlan,
+      if (hotel.planChangeRequestedAt != null)
+        'planChangeRequestedAt':
+            hotel.planChangeRequestedAt!.toIso8601String(),
     };
   }
 }

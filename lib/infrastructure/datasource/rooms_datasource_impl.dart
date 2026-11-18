@@ -147,4 +147,21 @@ class RoomsDataSourceImpl implements RoomsDataSource {
       await _rooms.doc(room.id).set(room.toJson());
     }
   }
+
+  @override
+  Future<void> createRoom(Room room) async {
+    try {
+      final finalHotelId = room.hotelId.isNotEmpty ? room.hotelId : hotelId;
+      final roomId = room.id.isNotEmpty
+          ? room.id
+          : 'room-${room.roomNumber}-$finalHotelId';
+      final model = RoomModel.fromEntity(room.copyWith(
+        id: roomId,
+        hotelId: finalHotelId,
+      ));
+      await _rooms.doc(roomId).set(model.toJson());
+    } catch (e) {
+      throw Exception('Error al registrar habitación: $e');
+    }
+  }
 }

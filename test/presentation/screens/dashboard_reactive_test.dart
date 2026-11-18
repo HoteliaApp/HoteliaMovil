@@ -63,6 +63,12 @@ class _StreamRoomsRepository implements RoomsRepository {
 
   @override
   Future<bool> markRoomCleanedIfPending(String roomId) async => false;
+
+  @override
+  Future<void> createRoom(Room room) async {
+    latestRooms = [...latestRooms, room];
+    controller.add(latestRooms);
+  }
 }
 
 class _StreamTaskRepository implements TaskRepository {
