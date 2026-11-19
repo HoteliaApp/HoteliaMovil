@@ -26,7 +26,14 @@ class RoomsDataSourceImpl implements RoomsDataSource {
         query = query.where('roomType', isEqualTo: type.name);
       }
 
-      final snapshot = await query.get();
+      QuerySnapshot<Map<String, dynamic>> snapshot;
+      try {
+        snapshot = await query.get();
+      } catch (e) {
+        // Fallback a caché local de Firestore cuando no hay red (H-31)
+        snapshot = await query.get(const GetOptions(source: Source.cache));
+      }
+
       final rooms = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -42,7 +49,13 @@ class RoomsDataSourceImpl implements RoomsDataSource {
   @override
   Future<Room> getRoomById(String id) async {
     try {
-      final doc = await _rooms.doc(id).get();
+      DocumentSnapshot<Map<String, dynamic>> doc;
+      try {
+        doc = await _rooms.doc(id).get();
+      } catch (_) {
+        doc = await _rooms.doc(id).get(const GetOptions(source: Source.cache));
+      }
+
       if (!doc.exists) throw Exception('Habitación no encontrada');
       
       final data = doc.data()!;
@@ -113,7 +126,9 @@ class RoomsDataSourceImpl implements RoomsDataSource {
       query = query.where('roomType', isEqualTo: type.name);
     }
 
-    return query.snapshots().map((snapshot) {
+    return query
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;

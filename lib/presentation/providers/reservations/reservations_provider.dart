@@ -61,7 +61,9 @@ class ReservationsNotifier extends Notifier<ReservationsState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: state.reservations.isEmpty
+            ? e.toString().replaceFirst('Exception: ', '')
+            : null,
       );
     }
   }
