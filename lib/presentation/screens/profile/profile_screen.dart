@@ -290,6 +290,12 @@ class ProfileScreen extends ConsumerWidget {
                         label: 'Bitácora de Auditoría',
                         onTap: () => context.push('/admin/audit'),
                       ),
+                      const Divider(height: 1),
+                      _ActionRow(
+                        icon: Icons.bar_chart_rounded,
+                        label: 'Reportes de Productividad',
+                        onTap: () => context.push('/admin/reports'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 28),

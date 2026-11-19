@@ -106,6 +106,21 @@ class Task {
   /// Tiempo transcurrido desde que se creó la tarea
   Duration get elapsedTime => DateTime.now().difference(createdAt);
 
+  /// Tiempo transcurrido entre la creación de la tarea (p. ej. Check-Out)
+  /// y su finalización (p. ej. Confirmación de Habitación Limpia).
+  Duration? get responseDuration {
+    if (completedAt == null) return null;
+    final diff = completedAt!.difference(createdAt);
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  /// Tiempo de respuesta en minutos entre creación y finalización.
+  double? get responseMinutes {
+    final duration = responseDuration;
+    if (duration == null) return null;
+    return duration.inSeconds / 60.0;
+  }
+
   /// Retorna true si la tarea está activa (pendiente o en progreso)
   bool get isActive => status == 'pending' || status == 'inProgress';
 
