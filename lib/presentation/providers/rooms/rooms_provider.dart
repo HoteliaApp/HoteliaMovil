@@ -98,7 +98,9 @@ class RoomsNotifier extends Notifier<RoomsState> {
       onError: (Object e) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: state.rooms.isEmpty
+              ? e.toString().replaceFirst('Exception: ', '')
+              : null,
         );
       },
     );

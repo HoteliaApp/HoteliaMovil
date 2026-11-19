@@ -29,7 +29,14 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
         query = query.where('guestId', isEqualTo: guestId);
       }
 
-      final snapshot = await query.get();
+      QuerySnapshot<Map<String, dynamic>> snapshot;
+      try {
+        snapshot = await query.get();
+      } catch (e) {
+        // Fallback a caché local persistida cuando no hay conexión (H-31)
+        snapshot = await query.get(const GetOptions(source: Source.cache));
+      }
+
       final reservations = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -45,7 +52,12 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   @override
   Future<Reservation> getReservationById(String id) async {
     try {
-      final doc = await _reservations.doc(id).get();
+      DocumentSnapshot<Map<String, dynamic>> doc;
+      try {
+        doc = await _reservations.doc(id).get();
+      } catch (_) {
+        doc = await _reservations.doc(id).get(const GetOptions(source: Source.cache));
+      }
       if (!doc.exists) throw Exception('Reservación no encontrada');
       
       final data = doc.data()!;

@@ -8,6 +8,7 @@ import 'package:hotel_app/presentation/providers/reservations/reservations_provi
 import 'package:hotel_app/presentation/widgets/reservations/reservations_card.dart';
 import 'package:hotel_app/presentation/widgets/reservations/create_reservation_dialog.dart';
 import 'package:hotel_app/presentation/widgets/reservations/cancel_reservation_dialog.dart';
+import 'package:hotel_app/presentation/widgets/shared/offline_banner.dart';
 
 /// Pantalla del listado de reservaciones
 class ReservationsScreen extends ConsumerWidget {
@@ -44,7 +45,10 @@ class ReservationsScreen extends ConsumerWidget {
           : null,
       body: Column(
         children: [
-          const SizedBox(height: 12),
+          // ── Banner indicador de Modo Fuera de Línea (H-31) ──
+          const OfflineBanner(),
+
+          const SizedBox(height: 8),
 
           // ── Filtros de estado ──
           SingleChildScrollView(
