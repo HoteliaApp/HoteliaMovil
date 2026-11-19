@@ -6,6 +6,7 @@ import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/providers/dashboard/dashboard_provider.dart';
 import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
+import 'package:hotel_app/presentation/providers/audit/audit_provider.dart';
 
 // ─────────────────────────── Infraestructura ────────────────────────────────
 
@@ -117,6 +118,21 @@ class CheckInOutNotifier extends Notifier<CheckInOutState> {
       // 3. Refresca habitaciones, dashboard y tareas en toda la app
       _invalidateAll();
 
+      // 4. Registrar en bitácora de auditoría (H-30)
+      try {
+        final authState = ref.read(authProvider);
+        final currentHotelId = ref.read(currentHotelIdProvider);
+        await ref.read(auditRepositoryProvider).logAction(
+          action: 'CHECK_IN',
+          description:
+              'Check-in realizado para el huésped $guestName en habitación #${room.roomNumber}',
+          performedBy: authState.email ?? 'recepcion@hotel.com',
+          performedByName: authState.name ?? authState.email,
+          targetId: reservationId,
+          hotelId: currentHotelId,
+        );
+      } catch (_) {}
+
       state = state.copyWith(
         isLoading: false,
         updatedReservation: reservation,
@@ -171,6 +187,21 @@ class CheckInOutNotifier extends Notifier<CheckInOutState> {
 
       // 5. Refresca habitaciones, dashboard y tareas en toda la app
       _invalidateAll();
+
+      // 6. Registrar en bitácora de auditoría (H-30)
+      try {
+        final authState = ref.read(authProvider);
+        final currentHotelId = ref.read(currentHotelIdProvider);
+        await ref.read(auditRepositoryProvider).logAction(
+          action: 'CHECK_OUT',
+          description:
+              'Check-out realizado para el huésped $guestName de habitación #${room.roomNumber}',
+          performedBy: authState.email ?? 'recepcion@hotel.com',
+          performedByName: authState.name ?? authState.email,
+          targetId: reservationId,
+          hotelId: currentHotelId,
+        );
+      } catch (_) {}
 
       state = state.copyWith(
         isLoading: false,

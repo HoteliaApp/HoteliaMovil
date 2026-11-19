@@ -6,6 +6,7 @@ import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/dashboard/dashboard_provider.dart';
 import 'package:hotel_app/presentation/widgets/dashboard/tasks_panel_widget.dart';
 import 'package:hotel_app/presentation/widgets/dashboard/send_alert_dialog.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -80,6 +81,13 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
               actions: [
+                // Botón Auditoría (Sólo Admin)
+                if (authState.role == UserRole.admin)
+                  IconButton(
+                    onPressed: () => context.push('/admin/audit'),
+                    icon: const Icon(Icons.history_edu_rounded, color: Colors.white),
+                    tooltip: 'Bitácora de Auditoría',
+                  ),
                 // Botón Alerta Wearable (Sólo Admin/Recepción)
                 if (authState.role == UserRole.admin ||
                     authState.role == UserRole.receptionist)

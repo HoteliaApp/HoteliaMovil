@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/domain/domain.dart';
+import 'package:hotel_app/presentation/providers/audit/audit_provider.dart';
+import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 
@@ -133,8 +135,13 @@ class ReservationsNotifier extends Notifier<ReservationsState> {
     }
   }
 
-  /// Cancela una reservación existente
-  Future<bool> cancelReservation(String reservationId) async {
+  /// Cancela una reservación existente y documenta la acción en la bitácora de auditoría
+  Future<bool> cancelReservation(
+    String reservationId, {
+    String? reason,
+    String? performedBy,
+    String? performedByName,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final updated = await _repository.cancelReservation(reservationId);
@@ -142,6 +149,31 @@ class ReservationsNotifier extends Notifier<ReservationsState> {
         return r.id == reservationId ? updated : r;
       }).toList();
       state = state.copyWith(reservations: updatedList, isLoading: false);
+
+      // Registrar evento en la bitácora de auditoría (H-30)
+      try {
+        final authState = ref.read(authProvider);
+        final currentHotelId = ref.read(currentHotelIdProvider);
+        final effectivePerformedBy =
+            performedBy ?? authState.email ?? 'recepcion@hotel.com';
+        final effectivePerformedByName =
+            performedByName ?? authState.name ?? authState.email;
+        final effectiveReason = reason ?? 'Cancelación manual de reservación';
+
+        await ref.read(auditRepositoryProvider).logAction(
+          action: 'CANCEL_RESERVATION',
+          description:
+              'Cancelación de la reservación #$reservationId (${updated.guestName}, Hab. ${updated.roomNumber}). Motivo: $effectiveReason',
+          performedBy: effectivePerformedBy,
+          performedByName: effectivePerformedByName,
+          reason: effectiveReason,
+          targetId: reservationId,
+          hotelId: currentHotelId,
+        );
+      } catch (_) {
+        // La auditoría no interrumpe el flujo principal
+      }
+
       return true;
     } catch (e) {
       state = state.copyWith(

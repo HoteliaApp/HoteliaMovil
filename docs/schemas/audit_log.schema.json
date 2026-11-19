@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hotelia.app/schemas/v2/audit_log.schema.json",
+  "title": "Hotelia Audit Log",
+  "description": "Documento de la colección /audit_logs de Cloud Firestore (H-30). Bitácora inmutable de trazabilidad operativa y de seguridad para check-in, check-out, cancelaciones, cambios de rol y administración SaaS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "action",
+    "description",
+    "performedBy",
+    "targetId",
+    "hotelId",
+    "timestamp"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificador del registro de auditoría en Firestore.",
+      "examples": ["audit-1763000000000"]
+    },
+    "action": {
+      "type": "string",
+      "description": "Código de la acción realizada (CANCEL_RESERVATION, CHECK_IN, CHECK_OUT, UPDATE_EMPLOYEE, CREATE_HOTEL, REQUEST_PLAN_CHANGE).",
+      "examples": ["CANCEL_RESERVATION", "CHECK_IN", "CHECK_OUT", "UPDATE_EMPLOYEE"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Descripción humana de la operación efectuada.",
+      "examples": ["Cancelación de reservación #res-101. Motivo: Cambio de itinerario del huésped."]
+    },
+    "performedBy": {
+      "type": "string",
+      "description": "Correo o identificador de quien ejecutó la acción.",
+      "examples": ["recepcionista@hotel.com"]
+    },
+    "performedByName": {
+      "type": "string",
+      "description": "Nombre visible del empleado o administrador que ejecutó la acción.",
+      "examples": ["Carlos Recepcionista", "Monserrath Castañón"]
+    },
+    "reason": {
+      "type": "string",
+      "description": "Motivo explícito u justificación operativa de la acción crítica (e.g. motivo de cancelación).",
+      "examples": ["Cliente canceló por fuerza mayor / cambio de vuelo"]
+    },
+    "targetId": {
+      "type": "string",
+      "description": "Identificador del recurso afectado (id de reservación, id de empleado, id de hotel).",
+      "examples": ["res-101", "usr-456"]
+    },
+    "hotelId": {
+      "type": "string",
+      "description": "Identificador del hotel tenant.",
+      "examples": ["hotel_101", "grand-palace"]
+    },
+    "timestamp": {
+      "description": "Marca temporal del servidor o fecha ISO 8601 del evento."
+    }
+  }
+}
