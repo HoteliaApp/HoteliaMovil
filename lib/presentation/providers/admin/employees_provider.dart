@@ -33,7 +33,10 @@ class EmployeesNotifier extends Notifier<bool> {
       ref.read(employeesRepositoryProvider);
 
   Future<void> updateEmployeeRoleAndStatus(
-      String userId, UserRole newRole, UserStatus newStatus) async {
+    String userId,
+    UserRole newRole,
+    UserStatus newStatus,
+  ) async {
     state = true;
     try {
       await _employeesRepo.updateEmployeeRoleAndStatus(
@@ -51,15 +54,17 @@ class EmployeesNotifier extends Notifier<bool> {
       }
 
       // Registrar en Auditoría
-      final managerEmail =
-          ref.read(authProvider).email ?? 'gerente@desconocido.com';
+      final authUser = ref.read(authProvider);
+      final managerEmail = authUser.email ?? 'gerente@desconocido.com';
+      final managerName = authUser.name ?? authUser.email;
       final currentHotelId = ref.read(currentHotelIdProvider);
-      final auditRepo = AuditRepository(hotelId: currentHotelId);
+      final auditRepo = AuditRepositoryImpl(null, currentHotelId);
       await auditRepo.logAction(
         action: 'UPDATE_EMPLOYEE',
         description:
             'Se cambió el estado a ${newStatus.label} y rol a ${newRole.label} del usuario $userId',
         performedBy: managerEmail,
+        performedByName: managerName,
         targetId: userId,
       );
     } finally {
@@ -68,5 +73,6 @@ class EmployeesNotifier extends Notifier<bool> {
   }
 }
 
-final employeesProvider =
-    NotifierProvider<EmployeesNotifier, bool>(EmployeesNotifier.new);
+final employeesProvider = NotifierProvider<EmployeesNotifier, bool>(
+  EmployeesNotifier.new,
+);

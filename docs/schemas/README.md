@@ -253,4 +253,27 @@ Control de cotas y límites contratados en el documento `/hotels/{hotelId}`:
 ### Regla de Validación de Altas de Habitaciones (Gherkin Escenario 1)
 Antes de persistir una nueva habitación en `/rooms/{roomId}`, el cliente valida el documento de suscripción activo (`hotelSubscriptionProvider`). Si el hotel cuenta con plan Básico y ya tiene 20 habitaciones, el intento de dar de alta la habitación 21 detiene el proceso y muestra el diálogo modal de **Límite de habitaciones alcanzado** con la opción de solicitar mejora de plan (`REQUEST_PLAN_CHANGE`).
 
+---
+
+## Trazabilidad y Bitácora de Auditoría (Issue #30 / H-30)
+
+Esquema de referencia: [audit_log.schema.json](./audit_log.schema.json).
+
+Para garantizar la seguridad, auditoría y resolución de desacuerdos operativos, todas las acciones críticas se registran en la colección `/audit_logs`:
+
+| Evento | Acción (`action`) | Entidad Objetivo | Datos Clave Registrados |
+|---|---|---|---|
+| **Cancelación de Reservación** | `CANCEL_RESERVATION` | `/reservations/{id}` | Fecha/hora, `performedBy`, `performedByName`, `reason` (obligatorio) |
+| **Check-in de Huésped** | `CHECK_IN` | `/reservations/{id}` | Fecha/hora, `performedBy`, `performedByName`, habitación, huésped |
+| **Check-out de Huésped** | `CHECK_OUT` | `/reservations/{id}` | Fecha/hora, `performedBy`, `performedByName`, habitación, huésped |
+| **Cambio de Rol / Estado** | `UPDATE_EMPLOYEE` | `/users/{id}` | Fecha/hora, `performedBy`, `performedByName`, nuevo rol, nuevo estado |
+| **Solicitud de Plan SaaS** | `REQUEST_PLAN_CHANGE` | `/hotels/{hotelId}` | Fecha/hora, `performedBy`, plan solicitado, notas |
+| **Alta de Hotel** | `CREATE_HOTEL` | `/hotels/{hotelId}` | Fecha/hora, `performedBy`, infraestructura inicial creada |
+
+### Reglas de Seguridad e Inmutabilidad
+- `/audit_logs/{logId}` es de solo lectura y solo creación (`allow create: if belongsToTenant(...)`).
+- Las actualizaciones y eliminaciones están completamente bloqueadas (`allow update, delete: if false`).
+- La pantalla de Auditoría (`/admin/audit`) permite al gerente o auditor filtrar eventos por tipo, rango de fechas y búsqueda textual del operador o motivo.
+
+
 

@@ -30,6 +30,7 @@ abstract class AppRoutes {
   // Admin
   static const employees = '/admin/employees';
   static const subscription = '/admin/subscription';
+  static const audit = '/admin/audit';
 }
 
 // ─────────────────────────── GoRouter Provider ───────────────────────────────
@@ -168,6 +169,11 @@ final List<RouteBase> _routes = [
     path: AppRoutes.subscription,
     name: 'subscription',
     builder: (context, state) => const SubscriptionScreen(),
+  ),
+  GoRoute(
+    path: AppRoutes.audit,
+    name: 'audit',
+    builder: (context, state) => const AuditScreen(),
   ),
 
   // ── Shell principal con Bottom Navigation ────────────────────────────────

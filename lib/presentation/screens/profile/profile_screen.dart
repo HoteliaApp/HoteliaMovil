@@ -284,6 +284,12 @@ class ProfileScreen extends ConsumerWidget {
                         label: 'Detalles de Suscripción SaaS',
                         onTap: () => context.push('/admin/subscription'),
                       ),
+                      const Divider(height: 1),
+                      _ActionRow(
+                        icon: Icons.history_edu_outlined,
+                        label: 'Bitácora de Auditoría',
+                        onTap: () => context.push('/admin/audit'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 28),

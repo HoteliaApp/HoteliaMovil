@@ -7,6 +7,7 @@ import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/reservations/reservations_provider.dart';
 import 'package:hotel_app/presentation/widgets/reservations/reservations_card.dart';
 import 'package:hotel_app/presentation/widgets/reservations/create_reservation_dialog.dart';
+import 'package:hotel_app/presentation/widgets/reservations/cancel_reservation_dialog.dart';
 
 /// Pantalla del listado de reservaciones
 class ReservationsScreen extends ConsumerWidget {
@@ -159,29 +160,9 @@ class ReservationsScreen extends ConsumerWidget {
 
   Future<void> _confirmCancel(
       BuildContext context, Reservation r, ReservationsNotifier notifier) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Cancelar reservación'),
-        content: Text(
-            '¿Estás seguro de cancelar la reservación de ${r.guestName}?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('No')),
-          ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Sí, cancelar',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await notifier.cancelReservation(r.id);
+    final reason = await CancelReservationDialog.show(context, reservation: r);
+    if (reason != null && reason.trim().isNotEmpty) {
+      await notifier.cancelReservation(r.id, reason: reason.trim());
     }
   }
 }
