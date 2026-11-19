@@ -11,6 +11,7 @@ import 'package:hotel_app/presentation/widgets/rooms/room_card.dart';
 import 'package:hotel_app/presentation/widgets/rooms/room_filter_bar.dart';
 import 'package:hotel_app/presentation/widgets/subscription/change_plan_dialog.dart';
 import 'package:hotel_app/presentation/widgets/subscription/room_limit_reached_dialog.dart';
+import 'package:hotel_app/presentation/widgets/shared/offline_banner.dart';
 
 /// Pantalla principal del módulo de habitaciones
 class RoomsScreen extends ConsumerWidget {
@@ -66,7 +67,10 @@ class RoomsScreen extends ConsumerWidget {
           : null,
       body: Column(
         children: [
-          const SizedBox(height: 12),
+          // ── Banner indicador de Modo Fuera de Línea (H-31) ──
+          const OfflineBanner(),
+
+          const SizedBox(height: 8),
           // ── Barra de filtros ──
           RoomFilterBar(
             selectedStatus: state.selectedStatus,

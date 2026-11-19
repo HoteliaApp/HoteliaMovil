@@ -275,5 +275,22 @@ Para garantizar la seguridad, auditoría y resolución de desacuerdos operativos
 - Las actualizaciones y eliminaciones están completamente bloqueadas (`allow update, delete: if false`).
 - La pantalla de Auditoría (`/admin/audit`) permite al gerente o auditor filtrar eventos por tipo, rango de fechas y búsqueda textual del operador o motivo.
 
+---
+
+## Modo Fuera de Línea, Caché y Persistencia en Mostrador (Issue #31 / H-31)
+
+Para garantizar la continuidad operativa de los recepcionistas ante cortes intermitentes de internet, la app implementa persistencia y resiliencia offline:
+
+### Configuración de Persistencia Firestore
+- **Caché Ilimitada:** `Settings(persistenceEnabled: true, cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED)`.
+- **Escuchas de Metadatos:** Consultas configuradas con `includeMetadataChanges: true` para emitir de inmediato los documentos cacheados en disco local antes de resolver la red.
+- **Fallback a Caché:** Si la conexión a la base de datos no está disponible, `getRooms()` y `getReservations()` consultan de forma transparente `Source.cache`.
+
+### Detección y Notificación de Estado de Red
+- **Servicio Desacoplado:** `ConnectivityService` monitorea activamente la conectividad (`connectivity_plus`).
+- **Banner Indicador:** Cuando el dispositivo pierde conexión, se despliega el widget `OfflineBanner` con el texto `"Modo fuera de línea"`.
+- **Estados de Sincronización Pendientes:** Identifica si existen mutaciones locales pendientes (`hasPendingWrites`) y notifica al usuario que se sincronizarán automáticamente al restablecerse la conexión.
+
+
 
 

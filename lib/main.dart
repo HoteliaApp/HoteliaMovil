@@ -5,6 +5,7 @@ import 'package:hotel_app/config/config.dart';
 import 'package:hotel_app/presentation/providers/providers.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -13,6 +14,12 @@ void main() async {
   // Inicializa Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Habilita persistencia offline y caché ilimitada en Cloud Firestore (H-31)
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
   // Inicializa los datos del locale para DateFormat

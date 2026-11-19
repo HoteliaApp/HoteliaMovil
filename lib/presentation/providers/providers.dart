@@ -7,3 +7,4 @@ export 'theme/theme_provider.dart';
 export 'onboarding/hotel_onboarding_provider.dart';
 export 'subscription/subscription_provider.dart';
 export 'audit/audit_provider.dart';
+export 'connectivity/connectivity_provider.dart';
