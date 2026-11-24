@@ -69,6 +69,16 @@ class _StreamRoomsRepository implements RoomsRepository {
     latestRooms = [...latestRooms, room];
     controller.add(latestRooms);
   }
+
+  // El dashboard ahora lee el agregado: se deriva del mismo stream de
+  // habitaciones para que las pruebas sigan midiendo lo mismo.
+  @override
+  Stream<RoomMetrics> watchRoomMetrics() =>
+      controller.stream.map(RoomMetrics.fromRooms);
+
+  @override
+  Future<RoomMetrics> recalculateRoomMetrics() async =>
+      RoomMetrics.fromRooms(latestRooms);
 }
 
 class _StreamTaskRepository implements TaskRepository {

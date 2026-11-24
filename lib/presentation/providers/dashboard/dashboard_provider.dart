@@ -48,6 +48,21 @@ class RoomStats {
     );
   }
 
+  /// Construye las estadísticas desde el documento agregado.
+  /// `pendingCleaning` suma los dos estados de limpieza, igual que
+  /// [RoomStats.fromRooms], para que la tarjeta no cambie de significado.
+  factory RoomStats.fromMetrics(RoomMetrics m) {
+    return RoomStats(
+      available: m.available,
+      occupied: m.occupied,
+      reserved: m.reserved,
+      pendingCleaning: m.pendingCleaning + m.cleaning,
+      cleaned: m.cleaned,
+      maintenance: m.outOfOrder,
+      total: m.total,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -143,13 +158,15 @@ class DashboardState {
 // ─────────────────────────── Notifier ────────────────────────────────────────
 
 class DashboardNotifier extends Notifier<DashboardState> {
-  StreamSubscription<List<Room>>? _roomsSub;
+  StreamSubscription<RoomMetrics>? _roomsSub;
   StreamSubscription<List<Task>>? _tasksSub;
   bool _disposed = false;
+  bool _metricsRepaired = false;
 
   @override
   DashboardState build() {
     _disposed = false;
+    _metricsRepaired = false;
     ref.onDispose(() {
       _disposed = true;
       _roomsSub?.cancel();
@@ -172,12 +189,24 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   void _subscribeToStreams() {
     _roomsSub?.cancel();
-    _roomsSub = _roomsRepo.watchRooms().listen(
-      (rooms) {
+    _roomsSub = _roomsRepo.watchRoomMetrics().listen(
+      (metrics) async {
         if (_disposed) return;
-        final stats = RoomStats.fromRooms(rooms);
+
+        // El agregado aún no existe (hotel recién dado de alta, o primera
+        // ejecución). Se reconstruye una vez y el stream recoge el resultado.
+        if (metrics.total == 0 && !_metricsRepaired) {
+          _metricsRepaired = true;
+          try {
+            await _roomsRepo.recalculateRoomMetrics();
+          } catch (_) {
+            // Si falla, el dashboard queda en ceros y se reintenta al recargar.
+          }
+          return;
+        }
+
         state = state.copyWith(
-          roomStats: stats,
+          roomStats: RoomStats.fromMetrics(metrics),
           isLoading: false,
           clearError: true,
         );

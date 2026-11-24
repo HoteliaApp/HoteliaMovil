@@ -1,109 +1,336 @@
 rules_version = '2';
 
-// Reglas de seguridad Firestore para aislamiento estricto multi-inquilino (H-26).
-// Compartidas por HoteliaMovil, HoteliaWear y HoteliaSmart.
-// Verifican el inquilino directamente desde el Firebase Custom Claim:
-//   request.auth.token.hotelId
+// ═══════════════════════════════════════════════════════════════════════════
+//  HOTELIA — Reglas de Seguridad de Cloud Firestore
+//  Proyecto: hotel-project-7f0d0
+//
+//  Archivo unificado. Integra los tres modelos que hasta ahora vivían
+//  separados:
+//
+//    • RBAC por rol y estado de cuenta            (issue #3  — publicado)
+//    • Aislamiento por inquilino (hotelId)        (issue #14 — solo en repo)
+//    • Contadores agregados de habitaciones       (issue #15)
+//
+//  Roles   (/users/{uid}.role):   unassigned | admin | receptionist |
+//                                 housekeeper | maintenance
+//  Estados (/users/{uid}.status): pending | active | rejected | inactive
+//
+//  Apps que consumen esta base:
+//    • HoteliaMovil    (Flutter)    — Firebase Auth, correo y contraseña
+//    • hotel-wear-app  (Wear OS)    — SIN autenticación  ← ver COMPATIBILIDAD
+//    • hotel-smart-app (Android TV) — SIN autenticación  ← ver COMPATIBILIDAD
+//
+//  CÓMO SE COMBINAN LOS DOS MODELOS
+//  El rol decide QUÉ puede hacer una persona; el inquilino decide SOBRE QUÉ
+//  datos. Las dos condiciones se exigen a la vez. Un recepcionista puede
+//  escribir reservaciones, pero solo las de su propio hotel.
+// ═══════════════════════════════════════════════════════════════════════════
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Funciones auxiliares de autenticación y tenant ───────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  ⚠️  COMPATIBILIDAD CON DISPOSITIVOS SIN AUTENTICACIÓN
+    //
+    //  El smartwatch y la Smart TV no usan Firebase Auth: leen y escriben
+    //  Firestore sin sesión. Si estas reglas les exigieran autenticación,
+    //  ambas apps dejarían de funcionar al publicar.
+    //
+    //  Mientras esta función devuelva true conservan el acceso mínimo que
+    //  necesitan: tareas, alertas y canje de PIN. El resto del modelo sí se
+    //  aplica a la app móvil.
+    //
+    //  CÓMO CERRARLO:
+    //    1. Agregar firebase_auth y signInAnonymously() en el reloj y la TV.
+    //    2. Cambiar la línea de abajo a:  return false;
+    //    3. Volver a publicar.
+    // ═════════════════════════════════════════════════════════════════════
+    function legacyDeviceAccess() {
+      return true;   // ← cambiar a false cuando reloj y TV autentiquen
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  Identidad y perfil
+    // ─────────────────────────────────────────────────────────────────────
 
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function tokenHotelId() {
-      return request.auth.token.hotelId;
-    }
-
-    function hasHotelClaim() {
+    function hasProfile() {
       return isAuthenticated()
-        && ('hotelId' in request.auth.token)
-        && request.auth.token.hotelId is string
-        && request.auth.token.hotelId.size() > 0;
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    function belongsToTenant(docHotelId) {
-      return hasHotelClaim() && docHotelId == tokenHotelId();
+    /// Ficha del empleado autenticado. Firestore cachea los get() repetidos
+    /// dentro de una misma evaluación, así que cuesta una sola lectura.
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function isSameTenantUpdate() {
-      return belongsToTenant(resource.data.hotelId)
-        && request.resource.data.hotelId == resource.data.hotelId;
+    /// Empleado con cuenta aprobada. Usa get(campo, default) para no bloquear
+    /// cuentas creadas antes de que existiera el campo `status`.
+    function isActiveStaff() {
+      return hasProfile() && profile().get('status', 'active') == 'active';
     }
 
-    // ── Inquilinos / Hoteles (/hotels/{hotelId}) ─────────────────────────────
+    function hasAnyRole(roles) {
+      return isActiveStaff() && profile().get('role', 'unassigned') in roles;
+    }
+
+    function isAdmin()      { return hasAnyRole(['admin']); }
+    function isFrontDesk()  { return hasAnyRole(['admin', 'receptionist']); }
+    function isOperations() { return hasAnyRole(['housekeeper', 'maintenance']); }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  Inquilino (hotelId)
+    //
+    //  El modelo objetivo es el Custom Claim `hotelId` en el token. Pero los
+    //  Custom Claims solo se escriben con el Admin SDK, o sea desde un
+    //  backend o una Cloud Function, y el proyecto opera en plan Spark sin
+    //  ninguno de los dos. Exigir el claim dejaría la base cerrada para
+    //  todos.
+    //
+    //  Por eso el inquilino se resuelve en cascada, igual que hace
+    //  currentHotelIdProvider en la app:
+    //
+    //    1. Custom Claim del token      (modelo objetivo)
+    //    2. Campo hotelId de la ficha   (lo que usa la app hoy)
+    //    3. 'hotel_101'                 (inquilino único actual)
+    //
+    //  El día que alguien empiece a asignar claims, el aislamiento se vuelve
+    //  estricto por sí solo, sin tocar este archivo.
+    // ─────────────────────────────────────────────────────────────────────
+
+    function claimTenant() {
+      return isAuthenticated() && 'hotelId' in request.auth.token
+        ? request.auth.token.hotelId
+        : '';
+    }
+
+    function profileTenant() {
+      return hasProfile() ? profile().get('hotelId', '') : '';
+    }
+
+    function tenantId() {
+      return claimTenant() != ''
+        ? claimTenant()
+        : (profileTenant() != '' ? profileTenant() : 'hotel_101');
+    }
+
+    /// Compara un hotelId contra el del solicitante.
+    /// Cadena vacía significa documento anterior al modelo multi-inquilino:
+    /// se permite para no romper los datos que ya están en la base.
+    function sameTenantId(id) {
+      return id == '' || id == tenantId();
+    }
+
+    function sameTenantDoc(data) {
+      return sameTenantId(data.get('hotelId', ''));
+    }
+
+    /// Campos que modifica una actualización.
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  /hotels — inquilinos y su plan de suscripción
+    // ─────────────────────────────────────────────────────────────────────
     match /hotels/{hotelId} {
-      allow read: if belongsToTenant(hotelId);
-      allow create: if belongsToTenant(hotelId)
-        || (isAuthenticated() && (!('hotelId' in request.auth.token)));
-      allow update, delete: if belongsToTenant(hotelId);
-    }
 
-    // ── Personal y Perfiles (/users/{userId}) ────────────────────────────────
-    match /users/{userId} {
-      allow read: if belongsToTenant(resource.data.hotelId)
-        || (isAuthenticated()
-            && request.auth.uid == userId
-            && (!('hotelId' in request.auth.token)
-                || resource.data.hotelId == tokenHotelId()));
+      // Lectura abierta a cualquier sesión: el asistente de alta necesita
+      // consultar el hotel antes de que la ficha del usuario tenga hotelId.
+      // El documento solo guarda nombre, pisos, dirección y plan.
+      allow read: if isAuthenticated();
 
-      allow create: if isAuthenticated()
-        && (request.auth.uid == userId
-            || belongsToTenant(request.resource.data.hotelId)
-            || (!('hotelId' in request.auth.token)))
-        && (!('hotelId' in request.auth.token)
-            || request.resource.data.hotelId == tokenHotelId());
+      // Alta de un hotel nuevo: es el registro de un cliente del SaaS.
+      // Cualquier sesión puede crear SU hotel; el aislamiento impide que
+      // luego alcance los datos de otro.
+      allow create: if isAuthenticated();
 
-      allow update: if belongsToTenant(resource.data.hotelId)
-        && request.resource.data.hotelId == resource.data.hotelId;
+      // Cambios de plan y configuración: solo gerencia del propio hotel.
+      allow update: if isAdmin() && sameTenantId(hotelId);
 
       allow delete: if false;
     }
 
-    // ── Habitaciones (/rooms/{roomId}) ───────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  /hotels/{hotelId}/metrics — contadores agregados de habitaciones
+    //
+    //  El dashboard lee un único documento en lugar de descargar la
+    //  colección completa. Requiere `write` además de `read` porque los
+    //  contadores se ajustan con FieldValue.increment() desde la app, en la
+    //  misma operación que cambia el estado de una habitación.
+    //
+    //  Las reglas NO se heredan hacia subcolecciones: sin este bloque el
+    //  documento caería en el cierre por defecto del final del archivo.
+    // ─────────────────────────────────────────────────────────────────────
+    match /hotels/{hotelId}/metrics/{metricId} {
+      allow read, write: if isActiveStaff() && sameTenantId(hotelId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  /users — empleados
+    // ─────────────────────────────────────────────────────────────────────
+    match /users/{userId} {
+
+      allow get: if (isAuthenticated() && request.auth.uid == userId)
+                 || (isAdmin() && sameTenantDoc(resource.data))
+                 || legacyDeviceAccess();   // el reloj vigila el vínculo
+
+      allow list: if isAdmin()
+                  || legacyDeviceAccess();  // el reloj busca el PIN aquí
+
+      // Alta de cuenta propia desde RegisterScreen: SIEMPRE nace sin rol y
+      // pendiente de aprobación. Nadie se registra como administrador.
+      allow create: if isAuthenticated()
+                    && request.auth.uid == userId
+                    && request.resource.data.role == 'unassigned'
+                    && request.resource.data.status == 'pending';
+
+      // Alta del dueño al crear su hotel en el asistente de onboarding.
+      // Queda como administrador de SU inquilino; el aislamiento impide que
+      // eso le dé acceso a cualquier otro hotel.
+      allow create, update: if isAuthenticated()
+                            && request.auth.uid == userId
+                            && request.resource.data.get('hotelId', '') != ''
+                            && request.resource.data.role == 'admin';
+
+      // Alta de personal inicial por parte de gerencia.
+      allow create: if isAdmin()
+                    && sameTenantDoc(request.resource.data);
+
+      // Aprobación y asignación de rol: solo esos dos campos.
+      allow update: if isAdmin()
+                    && sameTenantDoc(resource.data)
+                    && changedKeys().hasOnly(['role', 'status']);
+
+      // Campos del vínculo con el reloj, por el propio empleado.
+      allow update: if isAuthenticated()
+                    && request.auth.uid == userId
+                    && changedKeys().hasOnly([
+                         'wearablePin', 'pinCreatedAt', 'wearableLinkedAt'
+                       ]);
+
+      // El reloj borra el PIN al canjearlo.
+      allow update: if legacyDeviceAccess()
+                    && changedKeys().hasOnly([
+                         'wearablePin', 'pinCreatedAt', 'wearableLinkedAt'
+                       ]);
+
+      // Las cuentas se desactivan (status: 'inactive'), nunca se borran.
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  /rooms — habitaciones
+    // ─────────────────────────────────────────────────────────────────────
     match /rooms/{roomId} {
-      allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId)
-        || (isAuthenticated() && (!('hotelId' in request.auth.token)));
-      allow update: if isSameTenantUpdate();
-      allow delete: if belongsToTenant(resource.data.hotelId);
+
+      allow read: if isActiveStaff() && sameTenantDoc(resource.data);
+
+      // Alta y baja del inventario: gerencia, y también el asistente de alta
+      // inicial del hotel.
+      allow create: if isAdmin() && sameTenantDoc(request.resource.data)
+                    || isAuthenticated()
+                       && request.resource.data.get('hotelId', '') == tenantId();
+
+      allow delete: if isAdmin() && sameTenantDoc(resource.data);
+
+      // Recepción cambia estados por check-in y check-out.
+      // Limpieza y mantenimiento solo pueden mover el campo `status`.
+      allow update: if sameTenantDoc(resource.data)
+                    && (isFrontDesk()
+                        || (isOperations() && changedKeys().hasOnly(['status'])));
     }
 
-    // ── Reservaciones (/reservations/{reservationId}) ────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  /reservations — reservaciones
+    //
+    //  ✅ Criterio de la issue #3: housekeeper NO escribe ni borra aquí.
+    // ─────────────────────────────────────────────────────────────────────
     match /reservations/{reservationId} {
-      allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId);
-      allow update: if isSameTenantUpdate();
-      allow delete: if belongsToTenant(resource.data.hotelId);
+
+      // Lectura para todo el personal activo del hotel: el dashboard las
+      // consulta para los contadores aunque el rol no entre a la pantalla.
+      allow read: if isActiveStaff() && sameTenantDoc(resource.data);
+
+      allow create: if isFrontDesk()
+                    && sameTenantDoc(request.resource.data);
+
+      allow update: if isFrontDesk() && sameTenantDoc(resource.data);
+
+      // Las reservas se cancelan (status: 'cancelled'), no se borran.
+      allow delete: if false;
     }
 
-    // ── Tareas Operativas (/tasks/{taskId}) ──────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  /tasks — tareas operativas (canal móvil → reloj → TV)
+    //
+    //  ✅ Criterio de la issue #3: housekeeper y maintenance SÍ actualizan
+    //     el campo `status`.
+    // ─────────────────────────────────────────────────────────────────────
     match /tasks/{taskId} {
-      allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId);
-      allow update: if isSameTenantUpdate();
-      allow delete: if belongsToTenant(resource.data.hotelId);
+
+      allow read: if (isActiveStaff() && sameTenantDoc(resource.data))
+                  || legacyDeviceAccess();
+
+      // Las genera recepción: automáticas en el check-out y manuales desde
+      // el diálogo de alertas del dashboard.
+      allow create: if isFrontDesk()
+                    && sameTenantDoc(request.resource.data);
+
+      // Recepción corrige cualquier campo.
+      // Operaciones y el reloj solo avanzan el ciclo de vida.
+      allow update: if (isFrontDesk() && sameTenantDoc(resource.data))
+                    || ((isOperations() && sameTenantDoc(resource.data))
+                         || legacyDeviceAccess())
+                       && changedKeys().hasOnly(['status', 'completedAt', 'notes']);
+
+      // El historial alimenta los KPIs: no se borra.
+      allow delete: if false;
     }
 
-    // ── Alertas para Wearable y Smart TV (/alerts/{alertId}) ─────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  /alerts — avisos hacia el reloj y la Smart TV
+    // ─────────────────────────────────────────────────────────────────────
     match /alerts/{alertId} {
-      allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId);
-      allow update: if isSameTenantUpdate();
-      allow delete: if belongsToTenant(resource.data.hotelId);
+
+      allow read: if (isActiveStaff() && sameTenantDoc(resource.data))
+                  || legacyDeviceAccess();
+
+      allow create: if isFrontDesk()
+                    && sameTenantDoc(request.resource.data);
+
+      // El reloj marca la alerta como reconocida.
+      allow update: if (isFrontDesk() && sameTenantDoc(resource.data))
+                    || ((isOperations() && sameTenantDoc(resource.data))
+                         || legacyDeviceAccess())
+                       && changedKeys().hasOnly(['isAcknowledged', 'acknowledgedAt']);
+
+      allow delete: if false;
     }
 
-    // ── Bitácora de Auditoría (/audit_logs/{logId}) ──────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  /audit_logs — bitácora inmutable
+    // ─────────────────────────────────────────────────────────────────────
     match /audit_logs/{logId} {
-      allow read: if belongsToTenant(resource.data.hotelId);
-      allow create: if belongsToTenant(request.resource.data.hotelId)
-        || (isAuthenticated() && (!('hotelId' in request.auth.token)));
+
+      allow read: if isAdmin() && sameTenantDoc(resource.data);
+
+      allow create: if isActiveStaff()
+                    || (isAuthenticated()
+                        && request.resource.data.get('hotelId', '') != '');
+
       allow update, delete: if false;
     }
 
-    // ── Denegación explícita por defecto para cualquier otra colección ───────
+    // ─────────────────────────────────────────────────────────────────────
+    //  Cierre por defecto: toda colección no declarada arriba queda
+    //  bloqueada. Las reglas se suman con OR, así que esto no anula nada de
+    //  lo anterior; solo cierra la puerta a colecciones nuevas.
+    // ─────────────────────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

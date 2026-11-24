@@ -36,4 +36,14 @@ class RoomsRepositoryImpl implements RoomsRepository {
   Future<void> createRoom(Room room) {
     return _dataSource.createRoom(room);
   }
+
+  @override
+  Stream<RoomMetrics> watchRoomMetrics() {
+    return _dataSource.watchRoomMetrics();
+  }
+
+  @override
+  Future<RoomMetrics> recalculateRoomMetrics() {
+    return _dataSource.recalculateRoomMetrics();
+  }
 }

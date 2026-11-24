@@ -41,6 +41,12 @@ class FakeRoomsRepository implements RoomsRepository {
 
   @override
   Future<void> createRoom(Room room) async {}
+
+  @override
+  Stream<RoomMetrics> watchRoomMetrics() => Stream.value(RoomMetrics.empty);
+
+  @override
+  Future<RoomMetrics> recalculateRoomMetrics() async => RoomMetrics.empty;
 }
 
 class FakeEmployeesRepository implements EmployeesRepository {

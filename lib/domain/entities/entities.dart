@@ -1,4 +1,5 @@
 export 'room.dart';
+export 'room_metrics.dart';
 export 'reservation.dart';
 export 'task.dart';
 export 'user.dart';

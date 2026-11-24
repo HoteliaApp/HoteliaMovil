@@ -27,4 +27,12 @@ abstract class RoomsRepository {
 
   /// Da de alta una nueva habitación para este hotel.
   Future<void> createRoom(Room room);
+
+  /// Emite los contadores agregados de habitaciones del hotel actual.
+  /// Lee un único documento en lugar de la colección completa.
+  Stream<RoomMetrics> watchRoomMetrics();
+
+  /// Reconstruye el documento agregado recontando `/rooms`.
+  /// Operación costosa: alta inicial de un hotel o reparación de una desviación.
+  Future<RoomMetrics> recalculateRoomMetrics();
 }
