@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotel_app/domain/domain.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
+import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/reservations/reservations_provider.dart';
-import 'package:hotel_app/presentation/widgets/reservations/reservations_card.dart';
-import 'package:hotel_app/presentation/widgets/reservations/create_reservation_dialog.dart';
 import 'package:hotel_app/presentation/widgets/reservations/cancel_reservation_dialog.dart';
+import 'package:hotel_app/presentation/widgets/reservations/create_reservation_dialog.dart';
+import 'package:hotel_app/presentation/widgets/reservations/reservations_card.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_app/presentation/widgets/shared/offline_banner.dart';
 
 /// Pantalla del listado de reservaciones
@@ -18,42 +19,41 @@ class ReservationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(reservationsProvider);
     final notifier = ref.read(reservationsProvider.notifier);
+    final role = ref.watch(authProvider).role;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reservaciones'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Actualizar',
             onPressed: notifier.loadReservations,
           ),
         ],
       ),
-      floatingActionButton: (ref.watch(authProvider).role == UserRole.admin || 
-                             ref.watch(authProvider).role == UserRole.receptionist)
-          ? FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => const CreateReservationDialog(),
-                );
-              },
-              backgroundColor: AppColors.primary,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+      floatingActionButton:
+          (role == UserRole.admin || role == UserRole.receptionist)
+              ? FloatingActionButton.extended(
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Nueva reservación'),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => const CreateReservationDialog(),
+                    );
+                  },
+                )
+              : null,
       body: Column(
         children: [
-          // ── Banner indicador de Modo Fuera de Línea (H-31) ──
           const OfflineBanner(),
-
-          const SizedBox(height: 8),
-
-          // ── Filtros de estado ──
+          const SizedBox(height: AppSpacing.sm),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 _StatusFilter(
@@ -61,69 +61,71 @@ class ReservationsScreen extends ConsumerWidget {
                   isSelected: state.selectedStatus == null,
                   onTap: () => notifier.filterByStatus(null),
                 ),
-                ...ReservationStatus.values.map((s) => _StatusFilter(
-                      label: s.label,
-                      isSelected: state.selectedStatus == s,
-                      onTap: () => notifier.filterByStatus(
-                          state.selectedStatus == s ? null : s),
-                    )),
+                ...ReservationStatus.values.map(
+                  (s) => _StatusFilter(
+                    label: s.label,
+                    isSelected: state.selectedStatus == s,
+                    onTap: () => notifier.filterByStatus(
+                      state.selectedStatus == s ? null : s,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-
-          // ── Lista ──
-          Expanded(child: _buildBody(context, state, notifier, ref)),
+          const SizedBox(height: AppSpacing.sm),
+          if (!state.isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '${state.reservations.length} reservaciones encontradas',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(child: _buildBody(context, state, notifier)),
         ],
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, ReservationsState state,
-      ReservationsNotifier notifier, WidgetRef ref) {
+  Widget _buildBody(
+    BuildContext context,
+    ReservationsState state,
+    ReservationsNotifier notifier,
+  ) {
     if (state.isLoading && state.reservations.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (state.errorMessage != null && state.reservations.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wifi_off, size: 64, color: AppColors.secondary),
-            const SizedBox(height: 16),
-            Text(state.errorMessage!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: notifier.loadReservations,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-            ),
-          ],
-        ),
+      return AppErrorState(
+        icon: Icons.wifi_off_rounded,
+        message: state.errorMessage!,
+        onRetry: notifier.loadReservations,
       );
     }
 
     if (state.reservations.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_busy, size: 64, color: AppColors.secondary),
-            SizedBox(height: 16),
-            Text('No hay reservaciones\ncon los filtros seleccionados.',
-                textAlign: TextAlign.center),
-          ],
-        ),
+      return const AppEmptyState(
+        icon: Icons.event_busy_rounded,
+        title: 'No hay reservaciones\ncon los filtros seleccionados.',
       );
     }
 
     return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
       onRefresh: notifier.loadReservations,
       child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80),
+        padding: const EdgeInsets.only(bottom: 88),
         itemCount: state.reservations.length,
         itemBuilder: (_, i) {
           final r = state.reservations[i];
@@ -163,7 +165,10 @@ class ReservationsScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmCancel(
-      BuildContext context, Reservation r, ReservationsNotifier notifier) async {
+    BuildContext context,
+    Reservation r,
+    ReservationsNotifier notifier,
+  ) async {
     final reason = await CancelReservationDialog.show(context, reservation: r);
     if (reason != null && reason.trim().isNotEmpty) {
       await notifier.cancelReservation(r.id, reason: reason.trim());
@@ -176,23 +181,26 @@ class _StatusFilter extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _StatusFilter(
-      {required this.label, required this.isSelected, required this.onTap});
+  const _StatusFilter({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: FilterChip(
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => onTap(),
-        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+        selectedColor: AppColors.primary.withValues(alpha: 0.18),
         checkmarkColor: AppColors.primary,
-        labelStyle: TextStyle(
+        labelStyle: theme.textTheme.labelMedium?.copyWith(
           color: isSelected ? AppColors.primary : null,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
     );

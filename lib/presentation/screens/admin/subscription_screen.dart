@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/subscription/subscription_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_app/presentation/widgets/subscription/change_plan_dialog.dart';
 import 'package:hotel_app/presentation/widgets/subscription/subscription_card.dart';
 
@@ -14,32 +15,26 @@ class SubscriptionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final subscription = ref.watch(hotelSubscriptionProvider);
     final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Suscripción y Facturación'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Suscripción y Facturación')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: AppSpacing.screen,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Tarjeta de estado de suscripción y uso
                 const SubscriptionCard(),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
 
-                // Sección Comparativa de Planes
-                Text(
-                  'Planes SaaS Disponibles en Hotelia',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                const AppSectionTitle(
+                  title: 'Planes SaaS Disponibles en Hotelia',
+                  icon: Icons.workspace_premium_rounded,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
 
                 _buildPlanDetailCard(
                   title: 'Plan Básico',
@@ -53,8 +48,9 @@ class SubscriptionScreen extends ConsumerWidget {
                   ],
                   isCurrent: subscription.plan.toLowerCase() == 'basic',
                   theme: theme,
+                  statusColors: statusColors,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
 
                 _buildPlanDetailCard(
                   title: 'Plan Intermedio (Estándar)',
@@ -69,8 +65,9 @@ class SubscriptionScreen extends ConsumerWidget {
                   ],
                   isCurrent: subscription.plan.toLowerCase() == 'standard',
                   theme: theme,
+                  statusColors: statusColors,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
 
                 _buildPlanDetailCard(
                   title: 'Plan Premium',
@@ -85,29 +82,21 @@ class SubscriptionScreen extends ConsumerWidget {
                   ],
                   isCurrent: subscription.plan.toLowerCase() == 'premium',
                   theme: theme,
+                  statusColors: statusColors,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
 
-                // Botón para solicitar cambio
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => const ChangePlanDialog(),
-                    );
-                  },
-                  icon: const Icon(Icons.upgrade),
-                  label: const Text(
-                    'Solicitar cambio de suscripción',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                SizedBox(
+                  height: 50,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => const ChangePlanDialog(),
+                      );
+                    },
+                    icon: const Icon(Icons.upgrade_rounded),
+                    label: const Text('Solicitar cambio de suscripción'),
                   ),
                 ),
               ],
@@ -126,99 +115,108 @@ class SubscriptionScreen extends ConsumerWidget {
     required List<String> features,
     required bool isCurrent,
     required ThemeData theme,
+    required AppStatusColors statusColors,
   }) {
-    return Card(
-      elevation: isCurrent ? 3 : 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isCurrent ? AppColors.primary : Colors.grey.shade300,
-          width: isCurrent ? 2 : 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isCurrent ? AppColors.primary : null,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isCurrent)
-                  const Chip(
-                    label: Text(
-                      'PLAN ACTIVO',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: AppColors.primary,
-                  ),
-              ],
-            ),
-            const Divider(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.meeting_room, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Text(
-                  roomsLimit,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.people, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Text(
-                  usersLimit,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            for (final f in features) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
+    return AppCard(
+      accent: isCurrent ? AppColors.primary : null,
+      tinted: isCurrent,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.check, size: 14, color: AppColors.success),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        f,
-                        style: const TextStyle(fontSize: 12),
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isCurrent ? AppColors.primary : null,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
+              if (isCurrent)
+                const AppPill(
+                  label: 'PLAN ACTIVO',
+                  color: AppColors.primary,
+                  outlined: true,
+                  dense: true,
+                ),
             ],
-          ],
-        ),
+          ),
+          const Divider(height: AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.xs,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.meeting_room_rounded,
+                    size: AppIconSize.sm - 2,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs + 2),
+                  Text(
+                    roomsLimit,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.people_rounded,
+                    size: AppIconSize.sm - 2,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs + 2),
+                  Text(
+                    usersLimit,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm + 2),
+          for (final f in features)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.check_rounded,
+                    size: AppIconSize.xs,
+                    color: statusColors.success,
+                  ),
+                  const SizedBox(width: AppSpacing.xs + 2),
+                  Expanded(
+                    child: Text(f, style: theme.textTheme.bodySmall),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

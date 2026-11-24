@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 class SendAlertDialog extends ConsumerStatefulWidget {
   const SendAlertDialog({super.key});
@@ -48,29 +49,33 @@ class _SendAlertDialogState extends ConsumerState<SendAlertDialog> {
 
     try {
       final taskRepo = ref.read(taskRepositoryProvider);
-      
+
       await taskRepo.createManualAlert(
         roomId: _selectedRoomId!,
         roomNumber: roomNumber,
         taskType: _selectedTaskType,
         description: _descriptionController.text.trim(),
-        guestName: _guestController.text.trim().isEmpty ? 'Recepción' : _guestController.text.trim(),
+        guestName: _guestController.text.trim().isEmpty
+            ? 'Recepción'
+            : _guestController.text.trim(),
       );
 
       if (!mounted) return;
+      final statusColors = AppStatusColors.of(context);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Alerta enviada al wearable con éxito'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Alerta enviada al wearable con éxito'),
+          backgroundColor: statusColors.success,
         ),
       );
     } catch (e) {
       if (!mounted) return;
+      final statusColors = AppStatusColors.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al enviar alerta: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: statusColors.danger,
         ),
       );
     } finally {
@@ -84,14 +89,9 @@ class _SendAlertDialogState extends ConsumerState<SendAlertDialog> {
     final rooms = roomsState.rooms;
 
     return AlertDialog(
-      title: const Row(
-        children: [
-          Icon(Icons.watch_rounded, color: AppColors.primary),
-          SizedBox(width: 8),
-          Flexible(
-            child: Text('Enviar Alerta al Wearable', overflow: TextOverflow.ellipsis),
-          ),
-        ],
+      title: const AppDialogTitle(
+        icon: Icons.watch_rounded,
+        title: 'Enviar Alerta al Wearable',
       ),
       content: SingleChildScrollView(
         child: Form(
@@ -101,42 +101,48 @@ class _SendAlertDialogState extends ConsumerState<SendAlertDialog> {
             children: [
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                value: _selectedRoomId,
+                initialValue: _selectedRoomId,
                 decoration: const InputDecoration(
                   labelText: 'Habitación',
                   prefixIcon: Icon(Icons.meeting_room_rounded),
                 ),
                 hint: const Text('Seleccionar habitación'),
                 items: rooms
-                    .map((room) => DropdownMenuItem(
-                          value: room.id,
-                          child: Text('Hab. ${room.roomNumber} - ${room.roomType.label}'),
-                        ))
+                    .map(
+                      (room) => DropdownMenuItem(
+                        value: room.id,
+                        child: Text(
+                          'Hab. ${room.roomNumber} - ${room.roomType.label}',
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedRoomId = val);
                 },
                 validator: (val) => val == null ? 'Requerido' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                value: _selectedTaskType,
+                initialValue: _selectedTaskType,
                 decoration: const InputDecoration(
                   labelText: 'Tipo de Tarea',
                   prefixIcon: Icon(Icons.task_alt_rounded),
                 ),
                 items: _taskTypes.entries
-                    .map((e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(e.value),
-                        ))
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e.key,
+                        child: Text(e.value),
+                      ),
+                    )
                     .toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedTaskType = val);
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               TextFormField(
                 controller: _guestController,
                 decoration: const InputDecoration(
@@ -144,7 +150,7 @@ class _SendAlertDialogState extends ConsumerState<SendAlertDialog> {
                   prefixIcon: Icon(Icons.person_rounded),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
@@ -168,21 +174,27 @@ class _SendAlertDialogState extends ConsumerState<SendAlertDialog> {
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton.icon(
+        FilledButton.icon(
           onPressed: _isSubmitting
               ? null
               : () {
                   if (_selectedRoomId != null) {
-                    final selectedRoom = rooms.firstWhere((r) => r.id == _selectedRoomId);
+                    final selectedRoom =
+                        rooms.firstWhere((r) => r.id == _selectedRoomId);
                     _submit(selectedRoom.roomNumber);
                   } else {
                     _formKey.currentState!.validate();
                   }
                 },
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
           icon: _isSubmitting
               ? const SizedBox(
-                  width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : const Icon(Icons.send_rounded),
           label: Text(_isSubmitting ? 'Enviando...' : 'Enviar Alerta'),
         ),

@@ -370,7 +370,7 @@ void main() {
       expect(find.text('Ana Recepción'), findsOneWidget);
 
       // Limpiar búsqueda
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
       await tester.pumpAndSettle();
 
       expect(find.byType(AuditLogCard), findsNWidgets(3));

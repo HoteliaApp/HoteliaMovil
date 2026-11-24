@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 /// Diálogo modal que se muestra cuando un hotel intenta registrar habitaciones
 /// por encima del límite permitido por su suscripción SaaS activa (H-29, Escenario 1 Gherkin).
@@ -20,31 +21,13 @@ class RoomLimitReachedDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.statusWarningLight.withAlpha(30),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              color: AppColors.statusWarningLight,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Límite de habitaciones alcanzado',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ),
-        ],
+      title: AppDialogTitle(
+        icon: Icons.warning_amber_rounded,
+        title: 'Límite de habitaciones alcanzado',
+        color: statusColors.warning,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -54,35 +37,34 @@ class RoomLimitReachedDialog extends StatelessWidget {
             'Tu hotel cuenta con una suscripción $currentPlan que permite un máximo de $maxRooms habitaciones.',
             style: theme.textTheme.bodyMedium,
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withAlpha(60),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Habitaciones registradas:',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   '$currentRooms de $maxRooms',
-                  style: const TextStyle(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.statusDangerLight,
+                    color: statusColors.danger,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.md + 2),
           Text(
             'Para registrar la habitación número ${currentRooms + 1} o superiores, solicita una mejora de suscripción a un plan con mayor capacidad.',
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade700),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -92,16 +74,11 @@ class RoomLimitReachedDialog extends StatelessWidget {
           child: const Text('Cancelar'),
         ),
         ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
           onPressed: () {
             Navigator.of(context).pop();
             onUpgrade();
           },
-          icon: const Icon(Icons.arrow_upward, size: 18),
+          icon: const Icon(Icons.arrow_upward_rounded, size: AppIconSize.sm),
           label: const Text('Mejorar suscripción'),
         ),
       ],

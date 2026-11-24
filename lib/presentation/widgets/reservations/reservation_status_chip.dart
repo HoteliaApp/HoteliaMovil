@@ -20,35 +20,37 @@ class ReservationStatusChip extends StatelessWidget {
   }
 
   IconData get _icon => switch (status) {
-        ReservationStatus.newReservation => Icons.hourglass_empty,
-        ReservationStatus.confirmed => Icons.check_circle_outline,
-        ReservationStatus.checkedIn => Icons.login,
-        ReservationStatus.completed => Icons.logout,
-        ReservationStatus.cancelled => Icons.cancel_outlined,
+        ReservationStatus.newReservation => Icons.hourglass_empty_rounded,
+        ReservationStatus.confirmed => Icons.check_circle_rounded,
+        ReservationStatus.checkedIn => Icons.login_rounded,
+        ReservationStatus.completed => Icons.logout_rounded,
+        ReservationStatus.cancelled => Icons.cancel_rounded,
       };
 
   @override
   Widget build(BuildContext context) {
     final color = _getColor(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm + 2,
+        vertical: 5,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
+        color: color.withValues(alpha: AppAlpha.badge),
+        borderRadius: AppRadius.mdAll,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_icon, size: 13, color: color),
+          Icon(_icon, size: AppIconSize.xs, color: color),
           const SizedBox(width: 5),
           Text(
             status.label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

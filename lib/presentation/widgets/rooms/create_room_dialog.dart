@@ -6,6 +6,7 @@ import 'package:hotel_app/infrastructure/models/rooms/room_model.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/rooms/rooms_provider.dart';
 import 'package:hotel_app/presentation/providers/subscription/subscription_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_app/presentation/widgets/subscription/change_plan_dialog.dart';
 import 'package:hotel_app/presentation/widgets/subscription/room_limit_reached_dialog.dart';
 
@@ -51,7 +52,6 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // 1. Validar contra el documento de suscripción del hotel antes de permitir altas
     final subscription = ref.read(hotelSubscriptionProvider);
     if (subscription.isRoomsLimitReached) {
       Navigator.of(context).pop();
@@ -95,20 +95,22 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
       await ref.read(roomsProvider.notifier).createRoom(room);
 
       if (!mounted) return;
+      final statusColors = AppStatusColors.of(context);
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('¡Habitación $roomNum registrada con éxito!'),
-          backgroundColor: Colors.green,
+          backgroundColor: statusColors.success,
         ),
       );
     } catch (e) {
       if (!mounted) return;
+      final statusColors = AppStatusColors.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al crear habitación: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: statusColors.danger,
         ),
       );
     } finally {
@@ -118,46 +120,32 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(25),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.add_home_outlined, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Registrar Habitación',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                const AppDialogTitle(
+                  icon: Icons.add_home_rounded,
+                  title: 'Registrar Habitación',
                 ),
-                const Divider(height: 24),
+                const Divider(height: AppSpacing.xl),
 
-                // Número de habitación
                 TextFormField(
                   controller: _numberCtrl,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'Número de habitación *',
                     hintText: 'Ej. 205',
-                    prefixIcon: Icon(Icons.pin),
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.pin_rounded),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -169,16 +157,14 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.md + 2),
 
-                // Tipo de habitación
                 DropdownButtonFormField<RoomType>(
                   initialValue: _selectedType,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de habitación',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.hotel),
+                    prefixIcon: Icon(Icons.hotel_rounded),
                   ),
                   items: RoomType.values.map((type) {
                     return DropdownMenuItem(
@@ -190,19 +176,19 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
                     if (type != null) setState(() => _selectedType = type);
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.md + 2),
 
-                // Precio y Capacidad
                 Row(
                   children: [
                     Expanded(
                       child: TextFormField(
                         controller: _priceCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Precio por noche',
                           prefixText: '\$ ',
-                          border: OutlineInputBorder(),
                         ),
                         validator: (val) {
                           if (val == null || double.tryParse(val) == null) {
@@ -212,15 +198,14 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: TextFormField(
                         controller: _capacityCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Capacidad personas',
-                          prefixIcon: Icon(Icons.people_outline),
-                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.people_rounded),
                         ),
                         validator: (val) {
                           if (val == null || int.tryParse(val) == null) {
@@ -232,23 +217,23 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.md + 2),
 
-                // Amenities
-                const Text(
+                Text(
                   'Amenities:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: theme.textTheme.labelLarge,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: AppSpacing.sm - 2),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
+                  spacing: AppSpacing.sm - 2,
+                  runSpacing: AppSpacing.xs,
                   children: availableAmenities.map((amenity) {
                     final isSelected = _selectedAmenities.contains(amenity);
                     return FilterChip(
-                      label: Text(amenity, style: const TextStyle(fontSize: 12)),
+                      label: Text(amenity, style: theme.textTheme.labelMedium),
                       selected: isSelected,
-                      selectedColor: AppColors.primary.withAlpha(40),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.18),
+                      checkmarkColor: AppColors.primary,
                       onSelected: (selected) {
                         setState(() {
                           if (selected) {
@@ -261,25 +246,18 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
 
-                // Botones
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+                      onPressed:
+                          _isSaving ? null : () => Navigator.of(context).pop(),
                       child: const Text('Cancelar'),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton.icon(
                       onPressed: _isSaving ? null : _submit,
                       icon: _isSaving
                           ? const SizedBox(
@@ -290,8 +268,12 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.check, size: 18),
-                      label: Text(_isSaving ? 'Guardando...' : 'Guardar habitación'),
+                          : const Icon(
+                              Icons.check_rounded,
+                              size: AppIconSize.sm,
+                            ),
+                      label:
+                          Text(_isSaving ? 'Guardando...' : 'Guardar habitación'),
                     ),
                   ],
                 ),

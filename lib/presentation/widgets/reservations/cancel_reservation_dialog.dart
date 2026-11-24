@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/entities/reservation.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 class CancelReservationDialog extends StatefulWidget {
   final Reservation reservation;
@@ -46,31 +47,14 @@ class _CancelReservationDialogState extends State<CancelReservationDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
     final r = widget.reservation;
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Cancelar reservación',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ),
-        ],
+      title: AppDialogTitle(
+        icon: Icons.cancel_rounded,
+        title: 'Cancelar reservación',
+        color: statusColors.danger,
       ),
       content: SingleChildScrollView(
         child: Form(
@@ -85,69 +69,61 @@ class _CancelReservationDialogState extends State<CancelReservationDialog> {
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
+              const SizedBox(height: AppSpacing.lg),
+              AppCard(
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.person, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.person_rounded,
+                          size: AppIconSize.sm - 2,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm - 2),
                         Expanded(
                           child: Text(
                             r.guestName,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            style: theme.textTheme.titleSmall,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.xs + 2),
                     Row(
                       children: [
-                        const Icon(Icons.meeting_room, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 6),
-                        Text('Habitación ${r.roomNumber}'),
+                        const Icon(
+                          Icons.meeting_room_rounded,
+                          size: AppIconSize.sm - 2,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm - 2),
+                        Text(
+                          'Habitación ${r.roomNumber}',
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg + 4),
               Text(
                 'Motivo de la cancelación *',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.labelMedium,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 key: const Key('cancel_reservation_reason_field'),
                 controller: _reasonController,
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Ej. Huésped canceló por problemas de vuelo...',
-                  hintStyle: TextStyle(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    fontSize: 13,
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: colorScheme.outlineVariant),
-                  ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.red, width: 2),
+                    borderRadius: AppRadius.mdAll,
+                    borderSide: BorderSide(color: statusColors.danger, width: 2),
                   ),
                 ),
                 validator: (val) {
@@ -165,30 +141,19 @@ class _CancelReservationDialogState extends State<CancelReservationDialog> {
         ),
       ),
       actions: [
-        Wrap(
-          alignment: WrapAlignment.end,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Volver'),
-            ),
-            ElevatedButton.icon(
-              key: const Key('confirm_cancel_reservation_button'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[700],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              onPressed: _submit,
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Confirmar cancelación'),
-            ),
-          ],
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('Volver'),
+        ),
+        FilledButton.icon(
+          key: const Key('confirm_cancel_reservation_button'),
+          style: FilledButton.styleFrom(
+            backgroundColor: statusColors.danger,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: _submit,
+          icon: const Icon(Icons.check_rounded, size: AppIconSize.sm),
+          label: const Text('Confirmar cancelación'),
         ),
       ],
     );

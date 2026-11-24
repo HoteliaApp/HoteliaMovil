@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/reports/reports_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:intl/intl.dart';
 
 /// Pantalla de Reportes de Productividad y Tiempos de Respuesta para Gerencia (H-28).
@@ -56,7 +57,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final state = ref.watch(reportsProvider);
     final notifier = ref.read(reportsProvider.notifier);
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final statusColors = AppStatusColors.of(context);
     final activePreset = _activePresetDays(state.selectedDateRange);
 
@@ -65,21 +65,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         '${DateFormat('dd/MM/yyyy').format(state.selectedDateRange.end)}';
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Reportes de Productividad',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Reportes de Productividad'),
         actions: [
           IconButton(
             key: const Key('reports_date_range_picker_button'),
-            icon: const Icon(Icons.date_range, color: AppColors.primary),
+            icon: const Icon(Icons.date_range_rounded),
             tooltip: 'Filtrar por rango de fechas',
             onPressed: _selectDateRange,
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Actualizar',
             onPressed: notifier.refresh,
           ),
@@ -95,63 +91,57 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             : state.errorMessage != null &&
                     state.completedTasks.isEmpty &&
                     state.rooms.isEmpty
-                ? _ErrorView(
+                ? AppErrorState(
                     message: state.errorMessage!,
                     onRetry: notifier.refresh,
                   )
                 : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                      AppSpacing.xxl,
+                    ),
                     children: [
                       // ── Indicador de Rango Activo ─────────────────────────
-                      InkWell(
+                      AppCard(
+                        accent: AppColors.primary,
+                        tinted: true,
                         onTap: _selectDateRange,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.25),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md + 2,
+                          vertical: AppSpacing.sm + 2,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              size: AppIconSize.sm - 2,
+                              color: AppColors.primary,
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.calendar_today,
-                                size: 16,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  rangeText,
-                                  key: const Key(
-                                    'reports_active_date_range_label',
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                  ),
+                            const SizedBox(width: AppSpacing.sm + 2),
+                            Expanded(
+                              child: Text(
+                                rangeText,
+                                key: const Key(
+                                  'reports_active_date_range_label',
                                 ),
-                              ),
-                              const Text(
-                                'Cambiar',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: AppColors.primary,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            Text(
+                              'Cambiar',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppSpacing.sm + 2),
 
                       // ── Chips Rápidos de Rango ────────────────────────────
                       SingleChildScrollView(
@@ -164,14 +154,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               selected: activePreset == 7,
                               onTap: () => notifier.setPresetDays(7),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             _PresetChip(
                               key: const Key('reports_preset_14d'),
                               label: 'Últimos 14 días',
                               selected: activePreset == 14,
                               onTap: () => notifier.setPresetDays(14),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             _PresetChip(
                               key: const Key('reports_preset_30d'),
                               label: 'Últimos 30 días',
@@ -181,7 +171,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: AppSpacing.lg),
 
                       // ── Tarjetas de KPIs Resumen ──────────────────────────
                       LayoutBuilder(
@@ -220,11 +210,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             return Column(
                               children: [
                                 kpis[0],
-                                const SizedBox(height: 10),
+                                const SizedBox(height: AppSpacing.sm + 2),
                                 Row(
                                   children: [
                                     Expanded(child: kpis[1]),
-                                    const SizedBox(width: 10),
+                                    const SizedBox(width: AppSpacing.sm + 2),
                                     Expanded(child: kpis[2]),
                                   ],
                                 ),
@@ -235,15 +225,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           return Row(
                             children: [
                               Expanded(child: kpis[0]),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: AppSpacing.sm + 2),
                               Expanded(child: kpis[1]),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: AppSpacing.sm + 2),
                               Expanded(child: kpis[2]),
                             ],
                           );
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
 
                       // ── Gráfica 1: Tiempo de Respuesta de Limpieza ────────
                       _ChartSectionCard(
@@ -252,13 +242,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             'Tiempo Medio entre Check-Out y Habitación Limpia',
                         subtitle:
                             'Minutos promedio por día (${state.filteredCleaningTasks.length} limpiezas)',
-                        icon: Icons.timer_outlined,
+                        icon: Icons.timer_rounded,
                         accentColor: AppColors.primary,
                         child: _CleaningResponseLineChart(
                           series: state.cleaningResponseSeries,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
 
                       // ── Gráfica 2: Incidencias Resueltas por Categoría ────
                       _ChartSectionCard(
@@ -271,7 +261,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           categories: state.incidentsByCategory,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
 
                       // ── Gráfica 3: Tasa de Ocupación Semanal ──────────────
                       _ChartSectionCard(
@@ -315,8 +305,7 @@ class _PresetChip extends StatelessWidget {
       label: Text(label),
       selectedColor: AppColors.primary,
       checkmarkColor: Colors.white,
-      labelStyle: TextStyle(
-        fontSize: 12,
+      labelStyle: theme.textTheme.labelMedium?.copyWith(
         fontWeight: selected ? FontWeight.bold : FontWeight.w500,
         color: selected ? Colors.white : theme.colorScheme.onSurface,
       ),
@@ -325,7 +314,7 @@ class _PresetChip extends StatelessWidget {
             ? AppColors.primary
             : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
       visualDensity: VisualDensity.compact,
     );
   }
@@ -350,33 +339,13 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? theme.cardColor : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: isDark ? 0.35 : 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppCard(
+      accent: color,
+      padding: const EdgeInsets.all(AppSpacing.md + 2),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
+          AppIconBadge(icon: icon, color: color, size: 40, iconSize: 20),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,14 +359,13 @@ class _KpiCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: Text(
                     value,
                     key: ValueKey<String>(value),
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: color,
                     ),
@@ -408,7 +376,6 @@ class _KpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 10,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -440,38 +407,20 @@ class _ChartSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? theme.cardColor : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 18, color: accentColor),
+              AppIconBadge(
+                icon: icon,
+                color: accentColor,
+                size: 36,
+                iconSize: AppIconSize.sm,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,7 +434,6 @@ class _ChartSectionCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -494,7 +442,7 @@ class _ChartSectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.lg + 2),
           SizedBox(height: 210, child: child),
         ],
       ),
@@ -511,13 +459,14 @@ class _CleaningResponseLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (series.isEmpty) {
       return const _EmptyChartPlaceholder(
-        icon: Icons.cleaning_services_outlined,
+        icon: Icons.cleaning_services_rounded,
         message: 'Sin limpiezas completadas en este rango de fechas.',
       );
     }
 
     final theme = Theme.of(context);
     final labelColor = theme.colorScheme.onSurfaceVariant;
+    final labelStyle = theme.textTheme.labelSmall?.copyWith(color: labelColor);
     final gridColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.4);
 
     final maxMinutes = series.fold<double>(
@@ -536,7 +485,8 @@ class _CleaningResponseLineChart extends StatelessWidget {
     );
 
     final double minX = 0;
-    final double maxX = series.length == 1 ? 1.0 : (series.length - 1).toDouble();
+    final double maxX =
+        series.length == 1 ? 1.0 : (series.length - 1).toDouble();
 
     return LineChart(
       LineChartData(
@@ -563,18 +513,19 @@ class _CleaningResponseLineChart extends StatelessWidget {
                 final dateStr = DateFormat('dd/MM').format(point.date);
                 return LineTooltipItem(
                   '$dateStr\n${point.averageMinutes.toStringAsFixed(1)} min (${point.completedCount})',
-                  const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                  ),
+                  theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ) ??
+                      const TextStyle(color: Colors.white),
                 );
               }).toList();
             },
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
@@ -585,10 +536,7 @@ class _CleaningResponseLineChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text(
-                    '${value.toInt()}m',
-                    style: TextStyle(fontSize: 10, color: labelColor),
-                  ),
+                  child: Text('${value.toInt()}m', style: labelStyle),
                 );
               },
             ),
@@ -613,7 +561,7 @@ class _CleaningResponseLineChart extends StatelessWidget {
                   space: 6,
                   child: Text(
                     DateFormat('dd/MM').format(series[idx].date),
-                    style: TextStyle(fontSize: 10, color: labelColor),
+                    style: labelStyle,
                   ),
                 );
               },
@@ -650,7 +598,7 @@ class _IncidentsBarChart extends StatelessWidget {
     final total = categories.fold<int>(0, (sum, c) => sum + c.count);
     if (total == 0) {
       return const _EmptyChartPlaceholder(
-        icon: Icons.task_alt_outlined,
+        icon: Icons.task_alt_rounded,
         message: 'Sin incidencias resueltas en este rango de fechas.',
       );
     }
@@ -658,6 +606,7 @@ class _IncidentsBarChart extends StatelessWidget {
     final theme = Theme.of(context);
     final statusColors = AppStatusColors.of(context);
     final labelColor = theme.colorScheme.onSurfaceVariant;
+    final labelStyle = theme.textTheme.labelSmall?.copyWith(color: labelColor);
     final gridColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.4);
 
     final palette = [
@@ -689,7 +638,8 @@ class _IncidentsBarChart extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
@@ -700,10 +650,7 @@ class _IncidentsBarChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text(
-                    '${value.toInt()}',
-                    style: TextStyle(fontSize: 10, color: labelColor),
-                  ),
+                  child: Text('${value.toInt()}', style: labelStyle),
                 );
               },
             ),
@@ -720,10 +667,7 @@ class _IncidentsBarChart extends StatelessWidget {
                 return SideTitleWidget(
                   meta: meta,
                   space: 6,
-                  child: Text(
-                    categories[idx].label,
-                    style: TextStyle(fontSize: 10, color: labelColor),
-                  ),
+                  child: Text(categories[idx].label, style: labelStyle),
                 );
               },
             ),
@@ -740,7 +684,7 @@ class _IncidentsBarChart extends StatelessWidget {
                 color: color,
                 width: 20,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(6),
+                  top: Radius.circular(AppRadius.sm),
                 ),
               ),
             ],
@@ -760,7 +704,7 @@ class _WeeklyOccupancyBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (series.isEmpty || series.every((p) => p.totalRooms == 0)) {
       return const _EmptyChartPlaceholder(
-        icon: Icons.hotel_outlined,
+        icon: Icons.hotel_rounded,
         message: 'Sin datos suficientes de habitaciones para calcular ocupación.',
       );
     }
@@ -768,6 +712,7 @@ class _WeeklyOccupancyBarChart extends StatelessWidget {
     final theme = Theme.of(context);
     final statusColors = AppStatusColors.of(context);
     final labelColor = theme.colorScheme.onSurfaceVariant;
+    final labelStyle = theme.textTheme.labelSmall?.copyWith(color: labelColor);
     final gridColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.4);
 
     return BarChart(
@@ -791,17 +736,18 @@ class _WeeklyOccupancyBarChart extends StatelessWidget {
               final dateStr = DateFormat('dd/MM').format(point.date);
               return BarTooltipItem(
                 '$dateStr\n${point.occupancyPercentage.toStringAsFixed(0)}% (${point.occupiedRooms}/${point.totalRooms})',
-                const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
+                theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    const TextStyle(color: Colors.white),
               );
             },
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
@@ -812,10 +758,7 @@ class _WeeklyOccupancyBarChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text(
-                    '${value.toInt()}%',
-                    style: TextStyle(fontSize: 10, color: labelColor),
-                  ),
+                  child: Text('${value.toInt()}%', style: labelStyle),
                 );
               },
             ),
@@ -834,7 +777,7 @@ class _WeeklyOccupancyBarChart extends StatelessWidget {
                   space: 6,
                   child: Text(
                     DateFormat('dd/MM').format(series[idx].date),
-                    style: TextStyle(fontSize: 10, color: labelColor),
+                    style: labelStyle,
                   ),
                 );
               },
@@ -851,12 +794,12 @@ class _WeeklyOccupancyBarChart extends StatelessWidget {
                 color: statusColors.info,
                 width: 18,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(6),
+                  top: Radius.circular(AppRadius.sm),
                 ),
                 backDrawRodData: BackgroundBarChartRodData(
                   show: true,
                   toY: 100,
-                  color: statusColors.info.withValues(alpha: 0.08),
+                  color: statusColors.info.withValues(alpha: AppAlpha.tint),
                 ),
               ),
             ],
@@ -875,53 +818,20 @@ class _EmptyChartPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 36, color: color.withValues(alpha: 0.5)),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: color),
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorView({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-            ),
-          ],
-        ),
       ),
     );
   }

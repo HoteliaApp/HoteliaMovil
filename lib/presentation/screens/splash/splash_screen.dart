@@ -5,7 +5,7 @@ import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 
 /// Pantalla de inicio: se muestra 2 segundos mientras la app inicializa,
-/// luego navega al Dashboard.
+/// luego navega al Dashboard o al Login.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -54,69 +54,57 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Contenido central ─────────────────────────────────────
-            Expanded(
-              child: Center(
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: ScaleTransition(
-                    scale: _scaleAnim,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Ícono / Logo
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.hotel_rounded,
-                            size: 56,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-
-                        // Nombre
-                        const Text(
-                          'Hotel Manager',
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Subtítulo
-                        Text(
-                          'Sistema de gestión hotelera',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: ScaleTransition(
+              scale: _scaleAnim,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.hotel_rounded,
+                      size: 52,
+                      color: Colors.white,
                     ),
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'Hotelia',
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Gestión hotelera inteligente',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

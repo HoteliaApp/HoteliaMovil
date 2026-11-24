@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/tasks/tasks_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 /// Panel de tareas activas para el Dashboard.
 /// Muestra en tiempo real las tareas enviadas al wearable desde Firestore.
@@ -16,22 +17,16 @@ class TasksPanelWidget extends ConsumerWidget {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: tasksAsync.when(
-        // Mientras carga → nada visible (el resto del dashboard ya tiene su loader)
         loading: () => const SizedBox.shrink(key: ValueKey('tasks-loading')),
-
-        // Error de Firestore → aviso sutil, no bloqueante
         error: (e, _) => _TasksErrorBanner(
           key: const ValueKey('tasks-error'),
           message: e.toString(),
         ),
-
         data: (tasks) {
-          // Sin tareas activas → no mostrar la sección
           if (tasks.isEmpty) {
             return const SizedBox.shrink(key: ValueKey('tasks-empty'));
           }
 
-          // Hasta 4 tareas visibles en el panel
           final visible = tasks.take(4).toList();
           final hiddenCount = tasks.length - visible.length;
           final listKey = ValueKey<String>(
@@ -42,11 +37,12 @@ class TasksPanelWidget extends ConsumerWidget {
             key: const ValueKey('tasks-panel'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header de sección ────────────────────────────────────────
-              _TasksPanelHeader(totalCount: tasks.length),
-              const SizedBox(height: 10),
-
-              // ── Tarjetas de tarea ────────────────────────────────────────
+              AppSectionTitle(
+                title: 'Tareas activas',
+                icon: Icons.cleaning_services_rounded,
+                subtitle: '${tasks.length} activa${tasks.length != 1 ? 's' : ''}',
+              ),
+              const SizedBox(height: AppSpacing.md),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Column(
@@ -58,13 +54,11 @@ class TasksPanelWidget extends ConsumerWidget {
                         task: task,
                       ),
                     ),
-                    // ── "Ver más" si hay más de 4 ──────────────────────────
                     if (hiddenCount > 0) _MoreTasksBadge(count: hiddenCount),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
             ],
           );
         },
@@ -73,60 +67,6 @@ class TasksPanelWidget extends ConsumerWidget {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-
-class _TasksPanelHeader extends StatelessWidget {
-  final int totalCount;
-  const _TasksPanelHeader({required this.totalCount});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.cleaning_services_rounded,
-              size: 18,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Tareas activas',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        // Badge con conteo total
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Text(
-              '$totalCount activa${totalCount != 1 ? 's' : ''}',
-              key: ValueKey<int>(totalCount),
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Tarjeta de tarea ──────────────────────────────────────────────────────────
-
 class _TaskCard extends StatelessWidget {
   final HotelTask task;
   const _TaskCard({super.key, required this.task});
@@ -134,154 +74,84 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final statusColors = AppStatusColors.of(context);
     final isInProgress = task.status == 'inProgress';
     final color = isInProgress ? statusColors.info : statusColors.warning;
-    final statusIcon = isInProgress
-        ? Icons.play_circle_outline
-        : Icons.schedule_rounded;
+    final statusIcon =
+        isInProgress ? Icons.play_circle_rounded : Icons.schedule_rounded;
 
-    // Tiempo transcurrido formateado
     final elapsed = task.elapsedTime;
     final elapsedStr = elapsed.inMinutes < 60
         ? '${elapsed.inMinutes} min'
         : '${elapsed.inHours}h ${elapsed.inMinutes.remainder(60)}min';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: isDark ? theme.cardColor : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {},
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withValues(alpha: isDark ? 0.35 : 0.25),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
+    return AppCard(
+      accent: color,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      onTap: () {},
+      child: Row(
+        children: [
+          AppIconBadge(icon: _taskTypeIcon(task.taskType), color: color),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Ícono de tipo ──
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _taskTypeIcon(task.taskType),
-                    color: color,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // ── Información ──
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Habitación + tipo
-                      Row(
-                        children: [
-                          Text(
-                            'Hab. ${task.roomNumber}',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          _TypeChip(label: task.taskTypeLabel, color: color),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      // Huésped
-                      Text(
-                        task.guestName,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Estado + tiempo ──
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Row(
                   children: [
-                    Icon(statusIcon, size: 16, color: color),
-                    const SizedBox(height: 2),
                     Text(
-                      elapsedStr,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.colorScheme.onSurfaceVariant,
+                      'Hab. ${task.roomNumber}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.xs + 2),
+                    AppPill(
+                      label: task.taskTypeLabel,
+                      color: color,
+                      dense: true,
+                    ),
                   ],
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  task.guestName,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-        ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Icon(statusIcon, size: AppIconSize.sm - 2, color: color),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                elapsedStr,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   IconData _taskTypeIcon(String type) => switch (type) {
-    'cleaning' => Icons.cleaning_services_rounded,
-    'maintenance' => Icons.build_outlined,
-    'inspection' => Icons.search_rounded,
-    'delivery' => Icons.local_shipping_outlined,
-    'guest_request' => Icons.room_service_rounded,
-    _ => Icons.task_outlined,
-  };
+        'cleaning' => Icons.cleaning_services_rounded,
+        'maintenance' => Icons.build_rounded,
+        'inspection' => Icons.search_rounded,
+        'delivery' => Icons.local_shipping_rounded,
+        'guest_request' => Icons.room_service_rounded,
+        _ => Icons.task_rounded,
+      };
 }
-
-// ── Chip de tipo ──────────────────────────────────────────────────────────────
-
-class _TypeChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _TypeChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-// ── Más tareas ────────────────────────────────────────────────────────────────
 
 class _MoreTasksBadge extends StatelessWidget {
   final int count;
@@ -290,22 +160,19 @@ class _MoreTasksBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
       child: Center(
         child: Text(
           '+ $count tarea${count != 1 ? 's' : ''} más',
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ),
     );
   }
 }
-
-// ── Banner de error ───────────────────────────────────────────────────────────
 
 class _TasksErrorBanner extends StatelessWidget {
   final String message;
@@ -313,28 +180,10 @@ class _TasksErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final errorColor = Theme.of(context).colorScheme.error;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: errorColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: errorColor.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_amber_outlined, size: 18, color: errorColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'No se pudo cargar tareas activas',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: errorColor),
-            ),
-          ),
-        ],
-      ),
+    return AppInfoBanner(
+      icon: Icons.warning_amber_rounded,
+      color: AppStatusColors.of(context).danger,
+      message: 'No se pudo cargar tareas activas',
     );
   }
 }
