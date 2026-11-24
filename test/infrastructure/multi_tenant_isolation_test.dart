@@ -262,11 +262,13 @@ void main() {
       final rulesContent = rulesFile.readAsStringSync();
       expect(rulesContent, contains("rules_version = '2';"));
       expect(rulesContent, contains('request.auth.token.hotelId'));
-      expect(rulesContent, contains('belongsToTenant'));
-      expect(rulesContent, contains('isSameTenantUpdate'));
+      expect(rulesContent, contains('claimTenant'));
+      expect(rulesContent, contains('sameTenantId'));
+      expect(rulesContent, contains('sameTenantDoc'));
 
       for (final collectionPattern in [
         'match /hotels/{hotelId}',
+        'match /hotels/{hotelId}/metrics/{metricId}',
         'match /users/{userId}',
         'match /rooms/{roomId}',
         'match /reservations/{reservationId}',
