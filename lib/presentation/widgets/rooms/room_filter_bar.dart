@@ -42,7 +42,6 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
   @override
   void didUpdateWidget(RoomFilterBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sincroniza si el filtro se limpió externamente
     if (widget.selectedCapacity == null && _capacityCtrl.text.isNotEmpty) {
       _capacityCtrl.clear();
     }
@@ -61,13 +60,14 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Filtros de estado ──
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
               _FilterChip(
@@ -75,47 +75,48 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
                 isSelected: widget.selectedStatus == null,
                 onTap: () => widget.onStatusChanged(null),
               ),
-              ...RoomStatus.values.map((s) => _FilterChip(
-                    label: s.label,
-                    isSelected: widget.selectedStatus == s,
-                    onTap: () => widget.onStatusChanged(
-                        widget.selectedStatus == s ? null : s),
-                  )),
+              ...RoomStatus.values.map(
+                (s) => _FilterChip(
+                  label: s.label,
+                  isSelected: widget.selectedStatus == s,
+                  onTap: () => widget.onStatusChanged(
+                    widget.selectedStatus == s ? null : s,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
-
-        // ── Fila: tipo + capacidad ──
+        const SizedBox(height: AppSpacing.sm),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
-              // Filtros de tipo (scroll horizontal)
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: RoomType.values
-                        .map((t) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: _FilterChip(
-                                label: t.label,
-                                isSelected: widget.selectedType == t,
-                                onTap: () => widget.onTypeChanged(
-                                    widget.selectedType == t ? null : t),
-                                outlined: true,
+                        .map(
+                          (t) => Padding(
+                            padding: const EdgeInsets.only(right: AppSpacing.sm),
+                            child: _FilterChip(
+                              label: t.label,
+                              isSelected: widget.selectedType == t,
+                              onTap: () => widget.onTypeChanged(
+                                widget.selectedType == t ? null : t,
                               ),
-                            ))
+                              outlined: true,
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-
-              // ── Input de capacidad mínima ──
+              const SizedBox(width: AppSpacing.sm),
               SizedBox(
-                width: 90,
+                width: 96,
                 child: TextField(
                   controller: _capacityCtrl,
                   keyboardType: TextInputType.number,
@@ -124,12 +125,14 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
                   decoration: InputDecoration(
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 10),
+                      horizontal: AppSpacing.sm,
+                      vertical: 10,
+                    ),
                     labelText: 'Personas',
-                    labelStyle: const TextStyle(fontSize: 11),
-                    prefixIcon: const Icon(Icons.people_outline, size: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                    labelStyle: theme.textTheme.labelSmall,
+                    prefixIcon: const Icon(
+                      Icons.people_rounded,
+                      size: AppIconSize.xs + 2,
                     ),
                     suffixIcon: widget.selectedCapacity != null
                         ? GestureDetector(
@@ -137,7 +140,10 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
                               _capacityCtrl.clear();
                               widget.onCapacityChanged(null);
                             },
-                            child: const Icon(Icons.close, size: 14),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: AppIconSize.xs,
+                            ),
                           )
                         : null,
                   ),
@@ -150,14 +156,15 @@ class _RoomFilterBarState extends State<RoomFilterBar> {
                   },
                 ),
               ),
-
-              // ── Limpiar filtros ──
               if (_hasFilters)
                 Padding(
-                  padding: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
                   child: ActionChip(
                     label: const Text('Limpiar'),
-                    avatar: const Icon(Icons.close, size: 16),
+                    avatar: const Icon(
+                      Icons.close_rounded,
+                      size: AppIconSize.xs + 2,
+                    ),
                     onPressed: () {
                       _capacityCtrl.clear();
                       widget.onClearFilters();
@@ -187,21 +194,25 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: FilterChip(
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => onTap(),
-        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+        selectedColor: AppColors.primary.withValues(alpha: 0.18),
         checkmarkColor: AppColors.primary,
         side: outlined
-            ? const BorderSide(color: AppColors.secondary)
+            ? BorderSide(
+                color: isSelected
+                    ? AppColors.primary
+                    : theme.colorScheme.outlineVariant,
+              )
             : null,
-        labelStyle: TextStyle(
+        labelStyle: theme.textTheme.labelMedium?.copyWith(
           color: isSelected ? AppColors.primary : null,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
     );

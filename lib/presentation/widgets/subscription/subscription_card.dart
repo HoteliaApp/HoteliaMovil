@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
-import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/subscription/subscription_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_app/presentation/widgets/subscription/change_plan_dialog.dart';
 
 /// Tarjeta que visualiza la suscripción SaaS activa, uso de recursos y límites
@@ -14,152 +14,109 @@ class SubscriptionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final subscription = ref.watch(hotelSubscriptionProvider);
     final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
 
     final planColor = switch (subscription.plan.toLowerCase()) {
-      'basic' => Colors.blue.shade700,
-      'premium' => Colors.amber.shade800,
+      'basic' => statusColors.info,
+      'premium' => statusColors.warning,
       _ => AppColors.primary,
     };
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Encabezado con Plan y Badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: planColor.withAlpha(30),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.workspace_premium, color: planColor, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Suscripción SaaS',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          'Plan ${subscription.planLabel}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: planColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: planColor.withAlpha(25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: planColor.withAlpha(80)),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg + 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  AppIconBadge(
+                    icon: Icons.workspace_premium_rounded,
+                    color: planColor,
                   ),
-                  child: Text(
-                    subscription.planLabel.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: planColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            if (subscription.hasPendingPlanChange) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.statusInfoLight.withAlpha(20),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.statusInfoLight.withAlpha(80)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.pending_actions, size: 18, color: AppColors.statusInfoLight),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Solicitud en proceso para actualizar a Plan ${subscription.requestedPlanLabel}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  const SizedBox(width: AppSpacing.md),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Suscripción SaaS',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      Text(
+                        'Plan ${subscription.planLabel}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: planColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              AppPill(
+                label: subscription.planLabel.toUpperCase(),
+                color: planColor,
+                outlined: true,
+                dense: true,
               ),
             ],
+          ),
 
-            const Divider(height: 28),
-
-            // Barra de Habitaciones
-            _buildUsageProgress(
-              title: 'Habitaciones contratadas',
-              current: subscription.currentRooms,
-              max: subscription.maxRooms,
-              percentage: subscription.roomsUsagePercentage,
-              isLimitReached: subscription.isRoomsLimitReached,
-              icon: Icons.meeting_room_outlined,
-              theme: theme,
-            ),
-            const SizedBox(height: 16),
-
-            // Barra de Usuarios
-            _buildUsageProgress(
-              title: 'Usuarios contratados',
-              current: subscription.currentUsers,
-              max: subscription.maxUsers,
-              percentage: subscription.usersUsagePercentage,
-              isLimitReached: subscription.isUsersLimitReached,
-              icon: Icons.people_outline,
-              theme: theme,
-            ),
-
-            const SizedBox(height: 20),
-
-            // Botón Solicitar cambio de plan
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => const ChangePlanDialog(),
-                  );
-                },
-                icon: const Icon(Icons.upgrade, color: AppColors.primary),
-                label: const Text(
-                  'Solicitar cambio de plan',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+          if (subscription.hasPendingPlanChange) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppInfoBanner(
+              icon: Icons.pending_actions_rounded,
+              color: statusColors.info,
+              message:
+                  'Solicitud en proceso para actualizar a Plan ${subscription.requestedPlanLabel}',
             ),
           ],
-        ),
+
+          const Divider(height: AppSpacing.xl + 4),
+
+          _buildUsageProgress(
+            title: 'Habitaciones contratadas',
+            current: subscription.currentRooms,
+            max: subscription.maxRooms,
+            percentage: subscription.roomsUsagePercentage,
+            isLimitReached: subscription.isRoomsLimitReached,
+            icon: Icons.meeting_room_rounded,
+            theme: theme,
+            statusColors: statusColors,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          _buildUsageProgress(
+            title: 'Usuarios contratados',
+            current: subscription.currentUsers,
+            max: subscription.maxUsers,
+            percentage: subscription.usersUsagePercentage,
+            isLimitReached: subscription.isUsersLimitReached,
+            icon: Icons.people_rounded,
+            theme: theme,
+            statusColors: statusColors,
+          ),
+
+          const SizedBox(height: AppSpacing.lg + 4),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => const ChangePlanDialog(),
+                );
+              },
+              icon: const Icon(Icons.upgrade_rounded),
+              label: const Text('Solicitar cambio de plan'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -172,12 +129,11 @@ class SubscriptionCard extends ConsumerWidget {
     required bool isLimitReached,
     required IconData icon,
     required ThemeData theme,
+    required AppStatusColors statusColors,
   }) {
     final progressColor = isLimitReached
-        ? AppColors.statusDangerLight
-        : (percentage >= 0.8
-            ? AppColors.statusWarningLight
-            : AppColors.statusSuccessLight);
+        ? statusColors.danger
+        : (percentage >= 0.8 ? statusColors.warning : statusColors.success);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,42 +143,46 @@ class SubscriptionCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(icon, size: 16, color: Colors.grey.shade600),
-                const SizedBox(width: 6),
+                Icon(
+                  icon,
+                  size: AppIconSize.sm - 2,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpacing.xs + 2),
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
             Text(
               '$current de $max (${(percentage * 100).toInt()}%)',
-              style: TextStyle(
-                fontSize: 12,
+              style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: progressColor,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.xs + 2),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppRadius.smAll,
           child: LinearProgressIndicator(
             value: percentage,
             minHeight: 8,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation(progressColor),
           ),
         ),
         if (isLimitReached)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
               'Has alcanzado el límite máximo permitido por tu suscripción.',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.statusDangerLight,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: statusColors.danger,
                 fontWeight: FontWeight.w500,
               ),
             ),

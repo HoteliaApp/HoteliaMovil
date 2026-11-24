@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 /// Pantalla de Check-out
 class CheckOutScreen extends ConsumerWidget {
@@ -27,13 +28,14 @@ class CheckOutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(checkInOutProvider);
     final notifier = ref.read(checkInOutProvider.notifier);
+    final statusColors = AppStatusColors.of(context);
 
     ref.listen<CheckInOutState>(checkInOutProvider, (_, next) {
       if (next.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.successMessage!),
-            backgroundColor: Colors.green[700],
+            backgroundColor: statusColors.success,
           ),
         );
         notifier.clearMessages();
@@ -43,7 +45,7 @@ class CheckOutScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: Colors.red[700],
+            backgroundColor: statusColors.danger,
           ),
         );
         notifier.clearMessages();
@@ -53,91 +55,79 @@ class CheckOutScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Check-out')),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Ícono ──
-            Center(
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.logout, size: 48, color: AppColors.primary),
+            const Center(
+              child: AppIconBadge(
+                icon: Icons.logout_rounded,
+                color: AppColors.primary,
+                size: 96,
+                iconSize: 44,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
 
-            // ── Resumen de estancia ──
-            Text('Resumen de estancia',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-
-            _SummaryRow(label: 'Huésped', value: guestName),
-            _SummaryRow(label: 'Habitación', value: 'No. $roomNumber'),
-            _SummaryRow(label: 'Noches', value: '$nights noches'),
-            const Divider(height: 24),
-            _SummaryRow(
-              label: 'Total a cobrar',
-              value: '\$${total.toStringAsFixed(2)}',
-              highlight: true,
+            const AppSectionTitle(
+              title: 'Resumen de estancia',
+              icon: Icons.receipt_long_rounded,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.md),
 
-            // ── Aviso ──
-            Builder(
-              builder: (ctx) {
-                final warningColor = AppStatusColors.of(ctx).warning;
-                return Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: warningColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: warningColor.withValues(alpha: 0.4)),
+            AppCard(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  _SummaryRow(label: 'Huésped', value: guestName),
+                  _SummaryRow(label: 'Habitación', value: 'No. $roomNumber'),
+                  _SummaryRow(label: 'Noches', value: '$nights noches'),
+                  const Divider(height: AppSpacing.xl),
+                  _SummaryRow(
+                    label: 'Total a cobrar',
+                    value: '\$${total.toStringAsFixed(2)}',
+                    highlight: true,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning_amber_outlined, color: warningColor, size: 20),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Al confirmar, la habitación quedará disponible y la reservación se marcará como completada.',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            AppInfoBanner(
+              icon: Icons.warning_amber_rounded,
+              color: statusColors.warning,
+              message:
+                  'Al confirmar, la habitación quedará disponible y la reservación se marcará como completada.',
             ),
             const Spacer(),
 
-            // ── Botón ──
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: state.isLoading
                     ? null
-                    : () => notifier.performCheckOut(reservationId, roomId, guestName),
+                    : () => notifier.performCheckOut(
+                          reservationId,
+                          roomId,
+                          guestName,
+                        ),
                 icon: state.isLoading
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Icon(Icons.logout),
-                label: Text(state.isLoading ? 'Procesando...' : 'Confirmar Check-out'),
+                    : const Icon(Icons.logout_rounded),
+                label: Text(
+                  state.isLoading ? 'Procesando...' : 'Confirmar Check-out',
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
@@ -158,23 +148,28 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs + 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: highlight ? null : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           Text(
             value,
             style: highlight
-                ? Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    )
-                : Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w500),
+                ? theme.textTheme.titleMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  )
+                : theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
           ),
         ],
       ),

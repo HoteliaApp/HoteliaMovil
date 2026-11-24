@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/widgets/reservations/reservation_status_chip.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 /// Tarjeta de reservación para la lista de reservaciones
 class ReservationCard extends StatelessWidget {
@@ -22,103 +23,106 @@ class ReservationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: cs.primaryContainer,
-                  child: Icon(Icons.person, color: cs.onPrimaryContainer),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        reservation.guestName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+    return AppCard(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs + 2,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AppIconBadge(
+                icon: Icons.person_rounded,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      reservation.guestName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        'Hab. ${reservation.roomNumber} · ${reservation.nights} noches',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ReservationStatusChip(status: reservation.status),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-
-            // ── Fechas ──
-            Row(
-              children: [
-                _DateInfo(
-                  label: 'Check-in',
-                  date: reservation.checkIn,
-                  icon: Icons.login,
-                ),
-                const SizedBox(width: 24),
-                _DateInfo(
-                  label: 'Check-out',
-                  date: reservation.checkOut,
-                  icon: Icons.logout,
-                ),
-              ],
-            ),
-
-            // ── Acciones ──
-            if (_showActions) ...[
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (onCancel != null &&
-                      reservation.status == ReservationStatus.confirmed)
-                    TextButton(
-                      onPressed: onCancel,
-                      style: TextButton.styleFrom(
-                          foregroundColor: Colors.red[700]),
-                      child: const Text('Cancelar'),
                     ),
-                  if (onCheckIn != null &&
-                      reservation.status == ReservationStatus.confirmed) ...[
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
-                      onPressed: onCheckIn,
-                      icon: const Icon(Icons.login, size: 16),
-                      label: const Text('Check-in'),
+                    Text(
+                      'Hab. ${reservation.roomNumber} · ${reservation.nights} noches',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ],
-                  if (onCheckOut != null &&
-                      reservation.status == ReservationStatus.checkedIn) ...[
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
-                      onPressed: onCheckOut,
-                      icon: const Icon(Icons.logout, size: 16),
-                      label: const Text('Check-out'),
-                    ),
-                  ],
-                ],
+                ),
+              ),
+              ReservationStatusChip(status: reservation.status),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              _DateInfo(
+                label: 'Check-in',
+                date: reservation.checkIn,
+                icon: Icons.login_rounded,
+              ),
+              const SizedBox(width: AppSpacing.xl),
+              _DateInfo(
+                label: 'Check-out',
+                date: reservation.checkOut,
+                icon: Icons.logout_rounded,
               ),
             ],
+          ),
+          if (_showActions) ...[
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (onCancel != null &&
+                    reservation.status == ReservationStatus.confirmed)
+                  TextButton(
+                    onPressed: onCancel,
+                    style: TextButton.styleFrom(
+                      foregroundColor: statusColors.danger,
+                    ),
+                    child: const Text('Cancelar'),
+                  ),
+                if (onCheckIn != null &&
+                    reservation.status == ReservationStatus.confirmed) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton.icon(
+                    onPressed: onCheckIn,
+                    icon: const Icon(
+                      Icons.login_rounded,
+                      size: AppIconSize.xs + 2,
+                    ),
+                    label: const Text('Check-in'),
+                  ),
+                ],
+                if (onCheckOut != null &&
+                    reservation.status == ReservationStatus.checkedIn) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton.icon(
+                    onPressed: onCheckOut,
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      size: AppIconSize.xs + 2,
+                    ),
+                    label: const Text('Check-out'),
+                  ),
+                ],
+              ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -146,8 +150,8 @@ class _DateInfo extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 13, color: theme.colorScheme.primary),
-            const SizedBox(width: 4),
+            Icon(icon, size: AppIconSize.xs, color: theme.colorScheme.primary),
+            const SizedBox(width: AppSpacing.xs),
             Text(
               label,
               style: theme.textTheme.labelSmall?.copyWith(

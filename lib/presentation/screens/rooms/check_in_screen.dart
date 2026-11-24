@@ -4,13 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/presentation/providers/rooms/check_in_out_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:intl/intl.dart';
 
 /// Pantalla de Check-in
-///
-/// Presenta un formulario para capturar el nombre del huésped,
-/// número de acompañantes y fecha estimada de salida, antes de
-/// confirmar el check-in de la reservación.
 class CheckInScreen extends ConsumerStatefulWidget {
   final String reservationId;
   final String guestName;
@@ -39,7 +36,6 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   void initState() {
     super.initState();
     _guestNameCtrl = TextEditingController(text: widget.guestName);
-    // Sugiere mañana como checkout por defecto
     _expectedCheckOut = DateTime.now().add(const Duration(days: 1));
   }
 
@@ -77,7 +73,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
     final notifier = ref.read(checkInOutProvider.notifier);
     final companions = int.tryParse(_companionsCtrl.text) ?? 0;
-    
+
     await notifier.performCheckIn(
       widget.reservationId,
       widget.roomId,
@@ -92,14 +88,14 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     final state = ref.watch(checkInOutProvider);
     final notifier = ref.read(checkInOutProvider.notifier);
     final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
 
-    // Listener para navegar al éxito
     ref.listen<CheckInOutState>(checkInOutProvider, (_, next) {
       if (next.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.successMessage!),
-            backgroundColor: Colors.green[700],
+            backgroundColor: statusColors.success,
           ),
         );
         notifier.clearMessages();
@@ -109,7 +105,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: Colors.red[700],
+            backgroundColor: statusColors.danger,
           ),
         );
         notifier.clearMessages();
@@ -119,26 +115,21 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Check-in')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Ícono ──
-              Center(
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child:
-                      const Icon(Icons.login, size: 44, color: AppColors.primary),
+              const Center(
+                child: AppIconBadge(
+                  icon: Icons.login_rounded,
+                  color: AppColors.primary,
+                  size: 88,
+                  iconSize: 42,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.md),
               Center(
                 child: Text(
                   'Habitación No. ${widget.roomNumber}',
@@ -148,19 +139,22 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: AppSpacing.xl),
 
               // ── Nombre del huésped ──
-              Text('Nombre del huésped',
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 6),
+              Text(
+                'Nombre del huésped',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs + 2),
               TextFormField(
                 controller: _guestNameCtrl,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   hintText: 'Ej. Juan Pérez',
-                  prefixIcon: Icon(Icons.person_outline),
+                  prefixIcon: Icon(Icons.person_rounded),
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
@@ -169,116 +163,108 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.lg),
 
               // ── Número de acompañantes ──
-              Text('Número de acompañantes',
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 6),
+              Text(
+                'Número de acompañantes',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs + 2),
               TextFormField(
                 controller: _companionsCtrl,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   hintText: '0',
-                  prefixIcon: Icon(Icons.group_outlined),
+                  prefixIcon: Icon(Icons.group_rounded),
                 ),
                 validator: (v) {
                   final n = int.tryParse(v ?? '');
                   if (n == null || n < 0) return 'Valor inválido';
                   return null;
                 },
-                // Si está vacío, defaultea a 0
                 onChanged: (v) {
                   if (v.isEmpty) _companionsCtrl.text = '0';
                 },
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.lg),
 
               // ── Fecha estimada de salida ──
-              Text('Fecha estimada de salida',
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 6),
-              InkWell(
-                onTap: _pickCheckOutDate,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.5)),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today,
-                          color: AppColors.primary, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        _expectedCheckOut != null
-                            ? _formatDate(_expectedCheckOut!)
-                            : 'Seleccionar fecha',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: _expectedCheckOut != null
-                              ? null
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.chevron_right,
-                          color: AppColors.secondary),
-                    ],
-                  ),
+              Text(
+                'Fecha estimada de salida',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 28),
-
-              // ── Aviso ──
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: AppColors.secondary.withValues(alpha: 0.4)),
+              const SizedBox(height: AppSpacing.xs + 2),
+              AppCard(
+                onTap: _pickCheckOutDate,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.lg,
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Al confirmar, la habitación quedará marcada como ocupada y la reservación pasará a estado "En curso".',
-                        style: TextStyle(fontSize: 13),
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      color: AppColors.primary,
+                      size: AppIconSize.md,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      _expectedCheckOut != null
+                          ? _formatDate(_expectedCheckOut!)
+                          : 'Seleccionar fecha',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: _expectedCheckOut != null
+                            ? null
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Aviso ──
+              AppInfoBanner(
+                icon: Icons.info_rounded,
+                color: statusColors.info,
+                message:
+                    'Al confirmar, la habitación quedará marcada como ocupada y la reservación pasará a estado "En curso".',
+              ),
+              const SizedBox(height: AppSpacing.xxl),
 
               // ── Botón ──
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   onPressed: state.isLoading ? null : _confirm,
                   icon: state.isLoading
                       ? const SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
-                      : const Icon(Icons.login),
+                      : const Icon(Icons.login_rounded),
                   label: Text(
-                      state.isLoading ? 'Procesando...' : 'Confirmar Check-in'),
+                    state.isLoading ? 'Procesando...' : 'Confirmar Check-in',
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
             ],
           ),
         ),

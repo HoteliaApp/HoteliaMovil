@@ -4,6 +4,7 @@ import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/entities/audit_log.dart';
 import 'package:hotel_app/presentation/providers/audit/audit_provider.dart';
 import 'package:hotel_app/presentation/widgets/audit/audit_log_card.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 import 'package:intl/intl.dart';
 
 class AuditScreen extends ConsumerStatefulWidget {
@@ -58,32 +59,26 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
     final state = ref.watch(auditNotifierProvider);
     final notifier = ref.read(auditNotifierProvider.notifier);
     final filteredLogs = state.filteredLogs;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Bitácora de Auditoría',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Bitácora de Auditoría'),
         actions: [
           IconButton(
             icon: Icon(
               state.selectedDateRange != null
-                  ? Icons.date_range
-                  : Icons.date_range_outlined,
-              color: state.selectedDateRange != null
-                  ? AppColors.primary
-                  : null,
+                  ? Icons.event_available_rounded
+                  : Icons.date_range_rounded,
             ),
             tooltip: 'Filtrar por rango de fechas',
             onPressed: _selectDateRange,
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Actualizar',
             onPressed: () => notifier.refresh(),
           ),
@@ -91,22 +86,31 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
       ),
       body: Column(
         children: [
-          // ── Barra de Búsqueda ──────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.xs,
+            ),
             child: TextField(
               controller: _searchController,
               onChanged: (val) => notifier.setSearchQuery(val),
               decoration: InputDecoration(
                 hintText: 'Buscar por recepcionista, motivo, ref...',
-                hintStyle: TextStyle(
-                  fontSize: 13,
+                hintStyle: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
-                prefixIcon: const Icon(Icons.search, size: 20),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: AppIconSize.md - 2,
+                ),
                 suffixIcon: state.searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          size: AppIconSize.sm,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           notifier.setSearchQuery('');
@@ -114,63 +118,59 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                       )
                     : null,
                 isDense: true,
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.outlineVariant),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-                  ),
-                ),
               ),
             ),
           ),
 
-          // ── Indicador de Rango de Fechas Activo ───────────────────────────
-          if (state.selectedDateRange != null) ...[
+          if (state.selectedDateRange != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                  ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xs,
+              ),
+              child: AppCard(
+                accent: AppColors.primary,
+                tinted: true,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs + 2,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: AppIconSize.xs,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         'Rango: ${DateFormat('dd/MM/yyyy').format(state.selectedDateRange!.start)} - ${DateFormat('dd/MM/yyyy').format(state.selectedDateRange!.end)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        style: theme.textTheme.labelMedium?.copyWith(
                           color: AppColors.primary,
                         ),
                       ),
                     ),
                     InkWell(
                       onTap: () => notifier.setDateRange(null),
-                      child: const Icon(Icons.close, size: 16, color: AppColors.primary),
+                      borderRadius: AppRadius.mdAll,
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: AppIconSize.sm - 2,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-          ],
 
-          // ── Chips de Filtrado por Acción ──────────────────────────────────
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             child: Row(
               children: [
                 _FilterChipItem(
@@ -178,44 +178,47 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                   isSelected: state.selectedFilter == null,
                   onTap: () => notifier.setFilter(null),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _FilterChipItem(
                   label: 'Cancelaciones',
-                  icon: Icons.cancel_outlined,
-                  color: Colors.red[700]!,
-                  isSelected: state.selectedFilter == AuditActionType.cancellation,
+                  icon: Icons.cancel_rounded,
+                  color: statusColors.danger,
+                  isSelected:
+                      state.selectedFilter == AuditActionType.cancellation,
                   onTap: () => notifier.setFilter(AuditActionType.cancellation),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _FilterChipItem(
                   label: 'Check-in',
                   icon: Icons.login_rounded,
-                  color: const Color(0xFF10B981),
+                  color: statusColors.success,
                   isSelected: state.selectedFilter == AuditActionType.checkIn,
                   onTap: () => notifier.setFilter(AuditActionType.checkIn),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _FilterChipItem(
                   label: 'Check-out',
                   icon: Icons.logout_rounded,
-                  color: const Color(0xFF2563EB),
+                  color: statusColors.info,
                   isSelected: state.selectedFilter == AuditActionType.checkOut,
                   onTap: () => notifier.setFilter(AuditActionType.checkOut),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _FilterChipItem(
                   label: 'Cambio de Rol',
-                  icon: Icons.manage_accounts_outlined,
-                  color: const Color(0xFFF59E0B),
-                  isSelected: state.selectedFilter == AuditActionType.roleChange,
+                  icon: Icons.manage_accounts_rounded,
+                  color: statusColors.warning,
+                  isSelected:
+                      state.selectedFilter == AuditActionType.roleChange,
                   onTap: () => notifier.setFilter(AuditActionType.roleChange),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _FilterChipItem(
                   label: 'Suscripción',
-                  icon: Icons.card_membership_outlined,
-                  color: const Color(0xFF8B5CF6),
-                  isSelected: state.selectedFilter == AuditActionType.subscription,
+                  icon: Icons.card_membership_rounded,
+                  color: statusColors.purple,
+                  isSelected:
+                      state.selectedFilter == AuditActionType.subscription,
                   onTap: () => notifier.setFilter(AuditActionType.subscription),
                 ),
               ],
@@ -224,7 +227,6 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
 
           const Divider(height: 1),
 
-          // ── Lista de Auditoría ─────────────────────────────────────────────
           Expanded(
             child: Builder(
               builder: (context) {
@@ -233,84 +235,42 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                 }
 
                 if (state.errorMessage != null && state.logs.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                          const SizedBox(height: 12),
-                          Text(
-                            state.errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () => notifier.refresh(),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Reintentar'),
-                          ),
-                        ],
-                      ),
-                    ),
+                  return AppErrorState(
+                    message: state.errorMessage!,
+                    onRetry: () => notifier.refresh(),
                   );
                 }
 
                 if (filteredLogs.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.receipt_long_outlined,
-                            size: 64,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            state.hasActiveFilters
-                                ? 'No hay eventos que coincidan con los filtros'
-                                : 'No hay registros de auditoría aún',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            state.hasActiveFilters
-                                ? 'Prueba borrando los filtros activos o cambiando el término de búsqueda.'
-                                : 'Las operaciones críticas como check-ins, cancelaciones y cambios de rol aparecerán aquí en tiempo real.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (state.hasActiveFilters) ...[
-                            const SizedBox(height: 16),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                _searchController.clear();
-                                notifier.clearFilters();
-                              },
-                              icon: const Icon(Icons.filter_alt_off),
-                              label: const Text('Limpiar filtros'),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
+                  return AppEmptyState(
+                    icon: Icons.receipt_long_rounded,
+                    title: state.hasActiveFilters
+                        ? 'No hay eventos que coincidan con los filtros'
+                        : 'No hay registros de auditoría aún',
+                    message: state.hasActiveFilters
+                        ? 'Prueba borrando los filtros activos o cambiando el término de búsqueda.'
+                        : 'Las operaciones críticas como check-ins, cancelaciones y cambios de rol aparecerán aquí en tiempo real.',
+                    action: state.hasActiveFilters
+                        ? OutlinedButton.icon(
+                            onPressed: () {
+                              _searchController.clear();
+                              notifier.clearFilters();
+                            },
+                            icon: const Icon(Icons.filter_alt_off_rounded),
+                            label: const Text('Limpiar filtros'),
+                          )
+                        : null,
                   );
                 }
 
                 return RefreshIndicator(
+                  color: AppColors.primary,
                   onRefresh: () => notifier.refresh(),
                   child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 8, bottom: 32),
+                    padding: const EdgeInsets.only(
+                      top: AppSpacing.sm,
+                      bottom: AppSpacing.xxl,
+                    ),
                     itemCount: filteredLogs.length,
                     itemBuilder: (context, index) {
                       final log = filteredLogs[index];
@@ -357,15 +317,14 @@ class _FilterChipItem extends StatelessWidget {
       avatar: icon != null
           ? Icon(
               icon,
-              size: 14,
+              size: AppIconSize.xs,
               color: isSelected ? Colors.white : effectiveColor,
             )
           : null,
       selectedColor: effectiveColor,
       checkmarkColor: Colors.white,
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      labelStyle: theme.textTheme.labelMedium?.copyWith(
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
         color: isSelected ? Colors.white : theme.colorScheme.onSurface,
       ),
       side: BorderSide(
@@ -373,7 +332,7 @@ class _FilterChipItem extends StatelessWidget {
             ? effectiveColor
             : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
       visualDensity: VisualDensity.compact,
     );
   }

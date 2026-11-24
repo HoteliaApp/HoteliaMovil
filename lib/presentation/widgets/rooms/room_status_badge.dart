@@ -27,32 +27,35 @@ class RoomStatusBadge extends StatelessWidget {
   }
 
   IconData get _icon => switch (status) {
-        RoomStatus.available => Icons.check_circle_outline,
-        RoomStatus.occupied => Icons.person,
-        RoomStatus.reserved => Icons.event_available,
-        RoomStatus.pendingCleaning => Icons.cleaning_services_outlined,
-        RoomStatus.cleaning => Icons.cleaning_services,
-        RoomStatus.cleaned => Icons.verified_outlined,
-        RoomStatus.outOfOrder => Icons.build_outlined,
+        RoomStatus.available => Icons.check_circle_rounded,
+        RoomStatus.occupied => Icons.person_rounded,
+        RoomStatus.reserved => Icons.event_available_rounded,
+        RoomStatus.pendingCleaning => Icons.cleaning_services_rounded,
+        RoomStatus.cleaning => Icons.cleaning_services_rounded,
+        RoomStatus.cleaned => Icons.verified_rounded,
+        RoomStatus.outOfOrder => Icons.build_rounded,
       };
 
   @override
   Widget build(BuildContext context) {
     final color = _getColor(context);
+    final theme = Theme.of(context);
 
     if (compact) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: 3,
+        ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.mdAll,
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Text(
           status.label,
-          style: TextStyle(
+          style: theme.textTheme.labelSmall?.copyWith(
             color: color,
-            fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -60,22 +63,24 @@ class RoomStatusBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm + 2,
+        vertical: 5,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
+        color: color.withValues(alpha: AppAlpha.badge),
+        borderRadius: AppRadius.mdAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_icon, size: 14, color: color),
+          Icon(_icon, size: AppIconSize.xs, color: color),
           const SizedBox(width: 5),
           Text(
             status.label,
-            style: TextStyle(
+            style: theme.textTheme.labelMedium?.copyWith(
               color: color,
-              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),

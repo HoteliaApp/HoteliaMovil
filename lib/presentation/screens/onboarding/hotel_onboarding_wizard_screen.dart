@@ -6,10 +6,9 @@ import 'package:hotel_app/config/theme/app_theme.dart';
 import 'package:hotel_app/domain/domain.dart';
 import 'package:hotel_app/presentation/providers/auth/auth_provider.dart';
 import 'package:hotel_app/presentation/providers/onboarding/hotel_onboarding_provider.dart';
+import 'package:hotel_app/presentation/widgets/shared/app_ui.dart';
 
 /// Pantalla del Asistente Guiado de Onboarding (H-25).
-/// Permite a nuevos clientes hoteleros registrar su hotel, configurar pisos,
-/// generar habitaciones con amenities y dar de alta usuarios iniciales en 3 pasos.
 class HotelOnboardingWizardScreen extends ConsumerStatefulWidget {
   const HotelOnboardingWizardScreen({super.key});
 
@@ -24,12 +23,10 @@ class _HotelOnboardingWizardScreenState
   final _hotelAddressCtrl = TextEditingController();
   final _hotelIdCtrl = TextEditingController();
 
-  // Controladores para agregar empleados iniciales en el Paso 3
   final _staffNameCtrl = TextEditingController();
   final _staffEmailCtrl = TextEditingController();
   UserRole _selectedStaffRole = UserRole.receptionist;
 
-  // Lista de amenities estándar disponibles
   static const List<String> availableAmenities = [
     'WiFi',
     'TV',
@@ -58,9 +55,11 @@ class _HotelOnboardingWizardScreenState
     final email = _staffEmailCtrl.text.trim();
     if (name.isEmpty || email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ingresa un nombre y correo válido para el empleado.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text(
+            'Ingresa un nombre y correo válido para el empleado.',
+          ),
+          backgroundColor: AppStatusColors.of(context).danger,
         ),
       );
       return;
@@ -80,9 +79,8 @@ class _HotelOnboardingWizardScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(hotelOnboardingProvider);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final statusColors = AppStatusColors.of(context);
 
-    // Sincronizar controladores de texto si no están en edición activa
     if (_hotelNameCtrl.text != state.hotelName) {
       _hotelNameCtrl.text = state.hotelName;
     }
@@ -96,74 +94,61 @@ class _HotelOnboardingWizardScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asistente de Onboarding SaaS'),
-        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () {
             if (state.currentStep > 0) {
               ref.read(hotelOnboardingProvider.notifier).previousStep();
+            } else if (context.canPop()) {
+              context.pop();
             } else {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go(AppRoutes.login);
-              }
+              context.go(AppRoutes.login);
             }
           },
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [AppColors.backgroundDark, const Color(0xFF1E1E1E)]
-                : [AppColors.backgroundLight, AppColors.surface],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildStepIndicator(state.currentStep, theme),
-              if (state.errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: MaterialBanner(
-                    backgroundColor: theme.colorScheme.errorContainer,
-                    content: Text(
-                      state.errorMessage!,
-                      style: TextStyle(color: theme.colorScheme.onErrorContainer),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => ref
-                            .read(hotelOnboardingProvider.notifier)
-                            .validateCurrentStep(),
-                        child: const Text('OK'),
-                      ),
-                    ],
-                  ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildStepIndicator(state.currentStep, theme, statusColors),
+            if (state.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  0,
                 ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 680),
-                      child: switch (state.currentStep) {
-                        0 => _buildStep1HotelInfo(state, theme),
-                        1 => _buildStep2FloorsAndRooms(state, theme),
-                        2 => _buildStep3InitialStaff(state, theme),
-                        _ => const SizedBox.shrink(),
-                      },
-                    ),
+                child: AppInfoBanner(
+                  icon: Icons.error_outline_rounded,
+                  color: statusColors.danger,
+                  message: state.errorMessage!,
+                  action: TextButton(
+                    onPressed: () => ref
+                        .read(hotelOnboardingProvider.notifier)
+                        .validateCurrentStep(),
+                    child: const Text('OK'),
                   ),
                 ),
               ),
-              _buildBottomActionButtons(state, theme),
-            ],
-          ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: AppSpacing.screen,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 680),
+                    child: switch (state.currentStep) {
+                      0 => _buildStep1HotelInfo(state, theme),
+                      1 => _buildStep2FloorsAndRooms(state, theme),
+                      2 => _buildStep3InitialStaff(state, theme, statusColors),
+                      _ => const SizedBox.shrink(),
+                    },
+                  ),
+                ),
+              ),
+            ),
+            _buildBottomActionButtons(state, theme, statusColors),
+          ],
         ),
       ),
     );
@@ -171,7 +156,11 @@ class _HotelOnboardingWizardScreenState
 
   // ─────────────────────────── Indicador de Pasos ─────────────────────────────
 
-  Widget _buildStepIndicator(int currentStep, ThemeData theme) {
+  Widget _buildStepIndicator(
+    int currentStep,
+    ThemeData theme,
+    AppStatusColors statusColors,
+  ) {
     const steps = [
       '1. Datos del Hotel',
       '2. Pisos y Habitaciones',
@@ -183,16 +172,15 @@ class _HotelOnboardingWizardScreenState
         final isCompact = constraints.maxWidth < 500;
 
         return Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.md + 2,
+            horizontal: AppSpacing.md,
+          ),
           decoration: BoxDecoration(
             color: theme.cardColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(15),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: Border(
+              bottom: BorderSide(color: theme.dividerColor),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -200,8 +188,10 @@ class _HotelOnboardingWizardScreenState
               final isCompleted = index < currentStep;
               final isCurrent = index == currentStep;
               final color = isCompleted
-                  ? AppColors.success
-                  : (isCurrent ? AppColors.primary : Colors.grey.shade500);
+                  ? statusColors.success
+                  : (isCurrent
+                      ? AppColors.primary
+                      : theme.colorScheme.outline);
 
               return Expanded(
                 child: Row(
@@ -211,9 +201,12 @@ class _HotelOnboardingWizardScreenState
                         onTap: () => ref
                             .read(hotelOnboardingProvider.notifier)
                             .goToStep(index),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.mdAll,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs,
+                            horizontal: AppSpacing.xxs,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -221,26 +214,34 @@ class _HotelOnboardingWizardScreenState
                                 radius: 13,
                                 backgroundColor: color,
                                 child: isCompleted
-                                    ? const Icon(Icons.check, size: 15, color: Colors.white)
+                                    ? const Icon(
+                                        Icons.check_rounded,
+                                        size: 15,
+                                        color: Colors.white,
+                                      )
                                     : Text(
                                         '${index + 1}',
-                                        style: const TextStyle(
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 11,
                                         ),
                                       ),
                               ),
                               if (!isCompact) ...[
-                                const SizedBox(width: 6),
+                                const SizedBox(width: AppSpacing.xs + 2),
                                 Flexible(
                                   child: Text(
                                     steps[index],
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                                      color: isCurrent ? AppColors.primary : theme.textTheme.bodyMedium?.color,
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                      fontWeight: isCurrent
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isCurrent
+                                          ? AppColors.primary
+                                          : theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
@@ -254,7 +255,9 @@ class _HotelOnboardingWizardScreenState
                       Container(
                         width: 16,
                         height: 2,
-                        color: isCompleted ? AppColors.success : Colors.grey.shade400,
+                        color: isCompleted
+                            ? statusColors.success
+                            : theme.colorScheme.outlineVariant,
                       ),
                   ],
                 ),
@@ -269,178 +272,218 @@ class _HotelOnboardingWizardScreenState
   // ─────────────────────────── Paso 1: Datos del Hotel ─────────────────────────
 
   Widget _buildStep1HotelInfo(HotelOnboardingState state, ThemeData theme) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.hotel, color: AppColors.primary, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Paso 1: Datos Generales del Hotel',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Ingresa la información comercial y selecciona tu plan de suscripción SaaS.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
-            ),
-            const Divider(height: 32),
-
-            // Nombre comercial
-            TextFormField(
-              controller: _hotelNameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Nombre comercial del hotel *',
-                hintText: 'Ej. Gran Hotel Central',
-                prefixIcon: Icon(Icons.business),
-                border: OutlineInputBorder(),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AppIconBadge(
+                icon: Icons.hotel_rounded,
+                color: AppColors.primary,
+                size: 44,
+                iconSize: AppIconSize.md,
               ),
-              onChanged: (val) =>
-                  ref.read(hotelOnboardingProvider.notifier).setHotelName(val),
-            ),
-            const SizedBox(height: 16),
-
-            // Identificador de inquilino (hotelId)
-            TextFormField(
-              controller: _hotelIdCtrl,
-              decoration: InputDecoration(
-                labelText: 'Identificador único del Inquilino (hotelId) *',
-                hintText: 'hotel_nombre_unico',
-                prefixIcon: const Icon(Icons.tag),
-                border: const OutlineInputBorder(),
-                helperText: 'Identificador del tenant para aislamiento estricto en Firestore.',
-                suffixIcon: state.isCustomHotelId
-                    ? IconButton(
-                        icon: const Icon(Icons.restore),
-                        tooltip: 'Restablecer autogenerado',
-                        onPressed: () {
-                          ref
-                              .read(hotelOnboardingProvider.notifier)
-                              .setHotelName(_hotelNameCtrl.text);
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (val) =>
-                  ref.read(hotelOnboardingProvider.notifier).setCustomHotelId(val),
-            ),
-            const SizedBox(height: 16),
-
-            // Dirección
-            TextFormField(
-              controller: _hotelAddressCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Dirección física *',
-                hintText: 'Av. Las Palmas 123, Cancún, México',
-                prefixIcon: Icon(Icons.location_on),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (val) =>
-                  ref.read(hotelOnboardingProvider.notifier).setHotelAddress(val),
-            ),
-            const SizedBox(height: 20),
-
-            // Cantidad de pisos
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Número de pisos a administrar:',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'Define la estructura vertical de tu establecimiento.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  'Paso 1: Datos Generales del Hotel',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.remove),
-                        onPressed: state.floorsCount > 1
-                            ? () => ref
-                                .read(hotelOnboardingProvider.notifier)
-                                .setFloorsCount(state.floorsCount - 1)
-                            : null,
-                      ),
-                      Text(
-                        '${state.floorsCount}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: state.floorsCount < 50
-                            ? () => ref
-                                .read(hotelOnboardingProvider.notifier)
-                                .setFloorsCount(state.floorsCount + 1)
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Ingresa la información comercial y selecciona tu plan de suscripción SaaS.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 24),
+          ),
+          const Divider(height: AppSpacing.xxl),
 
-            // Selección de Plan SaaS
-            Text(
-              'Selecciona tu Plan SaaS:',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          TextFormField(
+            controller: _hotelNameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Nombre comercial del hotel *',
+              hintText: 'Ej. Gran Hotel Central',
+              prefixIcon: Icon(Icons.business_rounded),
             ),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth < 460) {
-                  return Column(
-                    children: [
-                      _buildPlanCard('basic', 'Básico', '1-2 pisos · Gestión esencial', state.plan, theme),
-                      const SizedBox(height: 8),
-                      _buildPlanCard('standard', 'Estándar', 'Multi-piso · Relojes y tareas', state.plan, theme),
-                      const SizedBox(height: 8),
-                      _buildPlanCard('premium', 'Premium', 'Completo · Smart TV + Wearable', state.plan, theme),
-                    ],
-                  );
-                }
-                return Row(
+            onChanged: (val) =>
+                ref.read(hotelOnboardingProvider.notifier).setHotelName(val),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          TextFormField(
+            controller: _hotelIdCtrl,
+            decoration: InputDecoration(
+              labelText: 'Identificador único del Inquilino (hotelId) *',
+              hintText: 'hotel_nombre_unico',
+              prefixIcon: const Icon(Icons.tag_rounded),
+              helperText:
+                  'Identificador del tenant para aislamiento estricto en Firestore.',
+              suffixIcon: state.isCustomHotelId
+                  ? IconButton(
+                      icon: const Icon(Icons.restore_rounded),
+                      tooltip: 'Restablecer autogenerado',
+                      onPressed: () {
+                        ref
+                            .read(hotelOnboardingProvider.notifier)
+                            .setHotelName(_hotelNameCtrl.text);
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (val) =>
+                ref.read(hotelOnboardingProvider.notifier).setCustomHotelId(val),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          TextFormField(
+            controller: _hotelAddressCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Dirección física *',
+              hintText: 'Av. Las Palmas 123, Cancún, México',
+              prefixIcon: Icon(Icons.location_on_rounded),
+            ),
+            onChanged: (val) =>
+                ref.read(hotelOnboardingProvider.notifier).setHotelAddress(val),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildPlanCard('basic', 'Básico', '1-2 pisos\nGestión esencial', state.plan, theme),
+                    Text(
+                      'Número de pisos a administrar:',
+                      style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildPlanCard('standard', 'Estándar', 'Multi-piso\nRelojes y tareas', state.plan, theme),
+                    Text(
+                      'Define la estructura vertical de tu establecimiento.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildPlanCard('premium', 'Premium', 'Completo\nSmart TV + Wearable', state.plan, theme),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  borderRadius: AppRadius.mdAll,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_rounded),
+                      onPressed: state.floorsCount > 1
+                          ? () => ref
+                              .read(hotelOnboardingProvider.notifier)
+                              .setFloorsCount(state.floorsCount - 1)
+                          : null,
+                    ),
+                    Text(
+                      '${state.floorsCount}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_rounded),
+                      onPressed: state.floorsCount < 50
+                          ? () => ref
+                              .read(hotelOnboardingProvider.notifier)
+                              .setFloorsCount(state.floorsCount + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          Text(
+            'Selecciona tu Plan SaaS:',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 460) {
+                return Column(
+                  children: [
+                    _buildPlanCard(
+                      'basic',
+                      'Básico',
+                      '1-2 pisos · Gestión esencial',
+                      state.plan,
+                      theme,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildPlanCard(
+                      'standard',
+                      'Estándar',
+                      'Multi-piso · Relojes y tareas',
+                      state.plan,
+                      theme,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildPlanCard(
+                      'premium',
+                      'Premium',
+                      'Completo · Smart TV + Wearable',
+                      state.plan,
+                      theme,
                     ),
                   ],
                 );
-              },
-            ),
-          ],
-        ),
+              }
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildPlanCard(
+                      'basic',
+                      'Básico',
+                      '1-2 pisos\nGestión esencial',
+                      state.plan,
+                      theme,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _buildPlanCard(
+                      'standard',
+                      'Estándar',
+                      'Multi-piso\nRelojes y tareas',
+                      state.plan,
+                      theme,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _buildPlanCard(
+                      'premium',
+                      'Premium',
+                      'Completo\nSmart TV + Wearable',
+                      state.plan,
+                      theme,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -453,43 +496,39 @@ class _HotelOnboardingWizardScreenState
     ThemeData theme,
   ) {
     final isSelected = planKey == selectedPlan;
-    return InkWell(
-      onTap: () =>
-          ref.read(hotelOnboardingProvider.notifier).setPlan(planKey),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(25) : theme.cardColor,
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
+    return AppCard(
+      accent: isSelected ? AppColors.primary : null,
+      tinted: isSelected,
+      onTap: () => ref.read(hotelOnboardingProvider.notifier).setPlan(planKey),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        children: [
+          Icon(
+            isSelected
+                ? Icons.check_circle_rounded
+                : Icons.circle_outlined,
+            color: isSelected
+                ? AppColors.primary
+                : theme.colorScheme.onSurfaceVariant,
+            size: AppIconSize.md,
           ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              isSelected ? Icons.check_circle : Icons.circle_outlined,
-              color: isSelected ? AppColors.primary : Colors.grey,
-              size: 20,
+          const SizedBox(height: AppSpacing.xs + 2),
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isSelected ? AppColors.primary : null,
             ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? AppColors.primary : theme.textTheme.bodyMedium?.color,
-              ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -497,91 +536,91 @@ class _HotelOnboardingWizardScreenState
   // ─────────────────────────── Paso 2: Pisos y Habitaciones ───────────────────
 
   Widget _buildStep2FloorsAndRooms(
-      HotelOnboardingState state, ThemeData theme) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.meeting_room, color: AppColors.primary, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Paso 2: Pisos, Tipos y Amenities',
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
+    HotelOnboardingState state,
+    ThemeData theme,
+  ) {
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AppIconBadge(
+                icon: Icons.meeting_room_rounded,
+                color: AppColors.primary,
+                size: 44,
+                iconSize: AppIconSize.md,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Paso 2: Pisos, Tipos y Amenities',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        'Configura las habitaciones para cada piso.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
-                        overflow: TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Configura las habitaciones para cada piso.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const Divider(height: 24),
+              ),
+            ],
+          ),
+          const Divider(height: AppSpacing.xl),
 
-            // Barra resumen y acción rápida
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Chip(
-                  avatar: const Icon(Icons.door_front_door, size: 18),
-                  label: Text(
-                    'Total: ${state.totalRoomsCount} habitaciones',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  backgroundColor: AppColors.primary.withAlpha(20),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              AppPill(
+                label: 'Total: ${state.totalRoomsCount} habitaciones',
+                color: AppColors.primary,
+                icon: Icons.door_front_door_rounded,
+              ),
+              TextButton.icon(
+                onPressed: () => ref
+                    .read(hotelOnboardingProvider.notifier)
+                    .applyQuickPreset(),
+                icon: const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: AppIconSize.sm,
                 ),
-                TextButton.icon(
-                  onPressed: () => ref
-                      .read(hotelOnboardingProvider.notifier)
-                      .applyQuickPreset(),
-                  icon: const Icon(Icons.auto_awesome, size: 18),
-                  label: const Text('Generación rápida'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                label: const Text('Generación rápida'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
 
-            // Lista de configuraciones por piso
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: state.floorsConfig.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final floor = state.floorsConfig[index];
-                return _buildFloorCard(floor, index, theme);
-              },
-            ),
-          ],
-        ),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: state.floorsConfig.length,
+            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
+            itemBuilder: (context, index) {
+              final floor = state.floorsConfig[index];
+              return _buildFloorCard(floor, index, theme);
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildFloorCard(FloorConfig floor, int floorIndex, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -592,34 +631,37 @@ class _HotelOnboardingWizardScreenState
                 backgroundColor: AppColors.primary,
                 child: Text(
                   '${floor.floorNumber}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
                   'Piso ${floor.floorNumber} — Rango: ${(floor.floorNumber * 100) + 1} a ${(floor.floorNumber * 100) + floor.roomCount}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
-          // Controles de cantidad, tipo y precio
           Wrap(
-            spacing: 16,
-            runSpacing: 12,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              // Cantidad de habitaciones
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Habitaciones: '),
+                  Text('Habitaciones: ', style: theme.textTheme.bodyMedium),
                   IconButton.outlined(
-                    icon: const Icon(Icons.remove, size: 16),
+                    icon: const Icon(Icons.remove_rounded, size: 16),
                     visualDensity: VisualDensity.compact,
                     onPressed: floor.roomCount > 1
                         ? () => ref
@@ -631,14 +673,16 @@ class _HotelOnboardingWizardScreenState
                         : null,
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                     child: Text(
                       '${floor.roomCount}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton.outlined(
-                    icon: const Icon(Icons.add, size: 16),
+                    icon: const Icon(Icons.add_rounded, size: 16),
                     visualDensity: VisualDensity.compact,
                     onPressed: floor.roomCount < 30
                         ? () => ref
@@ -652,7 +696,6 @@ class _HotelOnboardingWizardScreenState
                 ],
               ),
 
-              // Tipo de habitación
               DropdownButton<RoomType>(
                 value: floor.roomType,
                 items: RoomType.values.map((type) {
@@ -673,17 +716,17 @@ class _HotelOnboardingWizardScreenState
                 },
               ),
 
-              // Precio por noche
               SizedBox(
-                width: 130,
+                width: 136,
                 child: TextFormField(
                   initialValue: floor.pricePerNight.toStringAsFixed(0),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     prefixText: '\$ ',
                     labelText: 'Precio/noche',
                     isDense: true,
-                    border: OutlineInputBorder(),
                   ),
                   onChanged: (val) {
                     final price = double.tryParse(val) ?? floor.pricePerNight;
@@ -698,23 +741,23 @@ class _HotelOnboardingWizardScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
-          // Amenities selector (Chips)
           Text(
             'Amenities incluidas:',
-            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.labelMedium,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs + 2),
           Wrap(
-            spacing: 6,
-            runSpacing: 4,
+            spacing: AppSpacing.sm - 2,
+            runSpacing: AppSpacing.xs,
             children: availableAmenities.map((amenity) {
               final isSelected = floor.amenities.contains(amenity);
               return FilterChip(
-                label: Text(amenity, style: const TextStyle(fontSize: 12)),
+                label: Text(amenity, style: theme.textTheme.labelMedium),
                 selected: isSelected,
-                selectedColor: AppColors.primary.withAlpha(40),
+                selectedColor: AppColors.primary.withValues(alpha: 0.18),
+                checkmarkColor: AppColors.primary,
                 onSelected: (selected) {
                   final nextAmenities = List<String>.from(floor.amenities);
                   if (selected) {
@@ -740,7 +783,10 @@ class _HotelOnboardingWizardScreenState
   // ─────────────────────────── Paso 3: Usuarios Iniciales ─────────────────────
 
   Widget _buildStep3InitialStaff(
-      HotelOnboardingState state, ThemeData theme) {
+    HotelOnboardingState state,
+    ThemeData theme,
+    AppStatusColors statusColors,
+  ) {
     final authState = ref.watch(authProvider);
     final ownerName = authState.name?.isNotEmpty == true
         ? authState.name!
@@ -749,224 +795,238 @@ class _HotelOnboardingWizardScreenState
         ? authState.email!
         : 'dueno@hotel.com';
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AppIconBadge(
+                icon: Icons.group_rounded,
+                color: AppColors.primary,
+                size: 44,
+                iconSize: AppIconSize.md,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Paso 3: Creación de Usuarios Iniciales',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Tu cuenta quedará como Administrador. Registra miembros de tu equipo.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: AppSpacing.xl),
+
+          AppCard(
+            accent: AppColors.primary,
+            tinted: true,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
               children: [
-                const Icon(Icons.group, color: AppColors.primary, size: 28),
-                const SizedBox(width: 12),
+                const AppIconBadge(
+                  icon: Icons.admin_panel_settings_rounded,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Paso 3: Creación de Usuarios Iniciales',
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        '$ownerName (Tú)',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Tu cuenta quedará como Administrador. Registra miembros de tu equipo.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
+                        '$ownerEmail · Rol: Administrador (Activo)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: AppSpacing.sm),
+                const AppPill(
+                  label: 'Dueño / Admin',
+                  color: AppColors.primary,
+                  dense: true,
+                ),
               ],
             ),
-            const Divider(height: 24),
+          ),
+          const SizedBox(height: AppSpacing.xl),
 
-            // Tarjeta del Dueño (Admin)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withAlpha(100)),
-              ),
-              child: Row(
+          Text(
+            'Agregar personal operativo:',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppColors.primary,
-                    child: Icon(Icons.admin_panel_settings, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$ownerName (Tú)',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
+                    child: TextFormField(
+                      controller: _staffNameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre completo',
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _staffEmailCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Correo electrónico',
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm + 2),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<UserRole>(
+                      initialValue: _selectedStaffRole,
+                      isExpanded: true,
+                      isDense: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Rol',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: UserRole.receptionist,
+                          child: Text('Recepcionista'),
                         ),
-                        Text(
-                          '$ownerEmail · Rol: Administrador (Activo)',
-                          style: const TextStyle(fontSize: 13, color: Colors.grey),
-                          overflow: TextOverflow.ellipsis,
+                        DropdownMenuItem(
+                          value: UserRole.housekeeper,
+                          child: Text('Ama de llaves'),
+                        ),
+                        DropdownMenuItem(
+                          value: UserRole.maintenance,
+                          child: Text('Mantenimiento'),
                         ),
                       ],
+                      onChanged: (role) {
+                        if (role != null) {
+                          setState(() => _selectedStaffRole = role);
+                        }
+                      },
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Chip(
-                    label: Text('Dueño / Admin', style: TextStyle(fontSize: 11)),
-                    backgroundColor: Colors.white,
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md + 2,
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Agregar'),
+                    onPressed: _addStaffMember,
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
 
-            // Formulario para agregar personal adicional
-            Text(
-              'Agregar personal operativo:',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _staffNameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre completo',
-                          isDense: true,
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _staffEmailCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Correo electrónico',
-                          isDense: true,
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
+          if (state.staffList.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Text(
+                'No has agregado personal adicional. Puedes agregarlos después desde Administración.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<UserRole>(
-                        initialValue: _selectedStaffRole,
-                        isExpanded: true,
-                        isDense: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Rol',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: UserRole.receptionist,
-                            child: Text('Recepcionista'),
-                          ),
-                          DropdownMenuItem(
-                            value: UserRole.housekeeper,
-                            child: Text('Ama de llaves'),
-                          ),
-                          DropdownMenuItem(
-                            value: UserRole.maintenance,
-                            child: Text('Mantenimiento'),
-                          ),
-                        ],
-                        onChanged: (role) {
-                          if (role != null) setState(() => _selectedStaffRole = role);
-                        },
-                      ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.staffList.length,
+              itemBuilder: (context, index) {
+                final staff = state.staffList[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: AppIconBadge(
+                    icon: Icons.person_rounded,
+                    color: statusColors.neutral,
+                  ),
+                  title: Text(staff.name, style: theme.textTheme.titleSmall),
+                  subtitle: Text('${staff.email} · ${staff.role.label}'),
+                  trailing: IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: statusColors.danger,
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      ),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Agregar'),
-                      onPressed: _addStaffMember,
-                    ),
-                  ],
+                    onPressed: () => ref
+                        .read(hotelOnboardingProvider.notifier)
+                        .removeStaff(index),
+                  ),
+                );
+              },
+            ),
+
+          const Divider(height: AppSpacing.xxl),
+
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Resumen de configuración a dar de alta:',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text('• Hotel: ${state.hotelName} (${state.hotelId})'),
+                Text(
+                  '• Pisos: ${state.floorsCount} | Plan: ${state.plan.toUpperCase()}',
+                ),
+                Text(
+                  '• Habitaciones generadas: ${state.totalRoomsCount} habitaciones',
+                ),
+                Text(
+                  '• Usuarios a registrar: 1 Administrador + ${state.staffList.length} empleados',
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Lista de personal inicial configurado
-            if (state.staffList.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'No has agregado personal adicional. Puedes agregarlos después desde Administración.',
-                  style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.staffList.length,
-                itemBuilder: (context, index) {
-                  final staff = state.staffList[index];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey.shade300,
-                      child: const Icon(Icons.person, color: Colors.black54),
-                    ),
-                    title: Text(staff.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${staff.email} · ${staff.role.label}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => ref
-                          .read(hotelOnboardingProvider.notifier)
-                          .removeStaff(index),
-                    ),
-                  );
-                },
-              ),
-
-            const Divider(height: 32),
-
-            // Resumen de la configuración
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Resumen de configuración a dar de alta:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('• Hotel: ${state.hotelName} (${state.hotelId})'),
-                  Text('• Pisos: ${state.floorsCount} | Plan: ${state.plan.toUpperCase()}'),
-                  Text('• Habitaciones generadas: ${state.totalRoomsCount} habitaciones'),
-                  Text('• Usuarios a registrar: 1 Administrador + ${state.staffList.length} empleados'),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -974,18 +1034,15 @@ class _HotelOnboardingWizardScreenState
   // ─────────────────────────── Botones de Acción Inferiores ───────────────────
 
   Widget _buildBottomActionButtons(
-      HotelOnboardingState state, ThemeData theme) {
+    HotelOnboardingState state,
+    ThemeData theme,
+    AppStatusColors statusColors,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.screen,
       decoration: BoxDecoration(
         color: theme.cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(20),
-            blurRadius: 6,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        border: Border(top: BorderSide(color: theme.dividerColor)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -997,7 +1054,7 @@ class _HotelOnboardingWizardScreenState
                   : () => ref
                       .read(hotelOnboardingProvider.notifier)
                       .previousStep(),
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_rounded),
               label: const Text('Anterior'),
             )
           else
@@ -1005,21 +1062,25 @@ class _HotelOnboardingWizardScreenState
           if (state.currentStep < 2)
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
+                ),
               ),
               onPressed: () =>
                   ref.read(hotelOnboardingProvider.notifier).nextStep(),
-              icon: const Icon(Icons.arrow_forward),
+              icon: const Icon(Icons.arrow_forward_rounded),
               label: const Text('Siguiente'),
             )
           else
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
+                backgroundColor: statusColors.success,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
+                ),
               ),
               onPressed: state.isSubmitting ? null : _submitWizard,
               icon: state.isSubmitting
@@ -1031,12 +1092,11 @@ class _HotelOnboardingWizardScreenState
                         valueColor: AlwaysStoppedAnimation(Colors.white),
                       ),
                     )
-                  : const Icon(Icons.check_circle),
+                  : const Icon(Icons.check_circle_rounded),
               label: Text(
                 state.isSubmitting
                     ? 'Generando estructura...'
                     : 'Finalizar y dar de alta hotel',
-                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
         ],
@@ -1066,10 +1126,9 @@ class _HotelOnboardingWizardScreenState
           content: Text(
             '¡Hotel "${state.hotelName}" dado de alta exitosamente con ${state.totalRoomsCount} habitaciones!',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: AppStatusColors.of(context).success,
         ),
       );
-      // Redirigir al dashboard del nuevo hotel
       context.go(AppRoutes.dashboard);
     }
   }
