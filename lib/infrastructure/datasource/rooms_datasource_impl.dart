@@ -13,6 +13,27 @@ class RoomsDataSourceImpl implements RoomsDataSource {
   CollectionReference<Map<String, dynamic>> get _rooms =>
       _firestore.collection('rooms');
 
+  /// Documento de contadores agregados del inquilino actual.
+  DocumentReference<Map<String, dynamic>> get _metrics => _firestore
+      .collection('hotels')
+      .doc(hotelId)
+      .collection('metrics')
+      .doc('today');
+
+  /// Construye el movimiento de contadores de un estado a otro.
+  /// Los incrementos se resuelven en el servidor, así que varios dispositivos
+  /// pueden operar a la vez sin que se pierda ninguna cuenta.
+  Map<String, dynamic> _statusDelta(String? previous, String? next) {
+    final delta = <String, dynamic>{
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    if (previous != null) delta[previous] = FieldValue.increment(-1);
+    if (next != null) delta[next] = FieldValue.increment(1);
+
+    return delta;
+  }
+
   @override
   Future<List<Room>> getRooms({RoomStatus? status, RoomType? type}) async {
     try {
@@ -74,9 +95,28 @@ class RoomsDataSourceImpl implements RoomsDataSource {
   @override
   Future<Room> updateRoomStatus(String id, RoomStatus newStatus) async {
     try {
-      await getRoomById(id);
-      await _rooms.doc(id).update({'status': newStatus.name});
-      return await getRoomById(id);
+      // getRoomById valida el inquilino y tolera estar sin red (H-31).
+      final previousRoom = await getRoomById(id);
+      final previous = previousRoom.status.name;
+
+      if (previous == newStatus.name) return previousRoom;
+
+      // WriteBatch y no runTransaction: una transacción exige ida y vuelta al
+      // servidor y falla sin conexión, lo que rompería el check-in y el
+      // check-out en modo fuera de línea. El batch es igualmente atómico y se
+      // encola hasta que vuelve la red.
+      final batch = _firestore.batch();
+
+      batch.update(_rooms.doc(id), {'status': newStatus.name});
+      batch.set(
+        _metrics,
+        _statusDelta(previous, newStatus.name),
+        SetOptions(merge: true),
+      );
+
+      await batch.commit();
+
+      return previousRoom.copyWith(status: newStatus);
     } catch (e) {
       throw Exception('Error al actualizar habitación: $e');
     }
@@ -107,6 +147,11 @@ class RoomsDataSourceImpl implements RoomsDataSource {
         if (!isPending) return false;
 
         transaction.update(ref, {'status': RoomStatus.cleaned.name});
+        transaction.set(
+          _metrics,
+          _statusDelta(current, RoomStatus.cleaned.name),
+          SetOptions(merge: true),
+        );
         return true;
       });
     } catch (e) {
@@ -161,6 +206,9 @@ class RoomsDataSourceImpl implements RoomsDataSource {
     for (var room in defaultRooms) {
       await _rooms.doc(room.id).set(room.toJson());
     }
+
+    // Deja el agregado cuadrado con lo recién sembrado.
+    await recalculateRoomMetrics();
   }
 
   @override
@@ -174,9 +222,48 @@ class RoomsDataSourceImpl implements RoomsDataSource {
         id: roomId,
         hotelId: finalHotelId,
       ));
-      await _rooms.doc(roomId).set(model.toJson());
+
+      final batch = _firestore.batch();
+      batch.set(_rooms.doc(roomId), model.toJson());
+      batch.set(
+        _metrics,
+        {
+          ..._statusDelta(null, room.status.name),
+          'total': FieldValue.increment(1),
+        },
+        SetOptions(merge: true),
+      );
+      await batch.commit();
     } catch (e) {
       throw Exception('Error al registrar habitación: $e');
+    }
+  }
+
+  @override
+  Stream<RoomMetrics> watchRoomMetrics() {
+    return _metrics.snapshots().map((snapshot) {
+      final data = snapshot.data();
+      if (!snapshot.exists || data == null) return RoomMetrics.empty;
+      return RoomMetrics.fromJson(data);
+    });
+  }
+
+  @override
+  Future<RoomMetrics> recalculateRoomMetrics() async {
+    try {
+      final snapshot = await _rooms.where('hotelId', isEqualTo: hotelId).get();
+
+      final rooms = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return RoomMapper.fromJson(data);
+      }).toList();
+
+      final metrics = RoomMetrics.fromRooms(rooms);
+      await _metrics.set(metrics.toJson());
+      return metrics;
+    } catch (e) {
+      throw Exception('Error al recalcular métricas: $e');
     }
   }
 }

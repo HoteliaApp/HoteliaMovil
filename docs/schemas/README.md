@@ -294,3 +294,38 @@ Para garantizar la continuidad operativa de los recepcionistas ante cortes inter
 
 
 
+## Contadores Agregados de Habitaciones (Issue #15 / H-27)
+
+Documento `/hotels/{hotelId}/metrics/today` — totales precalculados por estado
+de habitación.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `available` · `reserved` · `occupied` · `pendingCleaning` · `cleaning` · `cleaned` · `outOfOrder` | number (int) | Un contador por estado. Los nombres coinciden con `RoomStatus.name` |
+| `total` | number (int) | Habitaciones registradas del hotel |
+| `updatedAt` | string ISO 8601 | Última modificación del agregado |
+
+### Mantenimiento
+
+Los contadores se ajustan con `FieldValue.increment()` en la misma escritura
+atómica que cambia el estado de una habitación, de modo que no pueden
+desviarse por una escritura parcial. Todas las rutas de cambio de estado pasan
+por `RoomsDataSourceImpl`: `updateRoomStatus` (check-in, check-out, reserva,
+fuera de servicio), `markRoomCleanedIfPending` (cierre automático del ciclo) y
+`createRoom` (alta de habitación).
+
+Como los incrementos se resuelven en el servidor, varios dispositivos pueden
+operar simultáneamente sin que se pierda ninguna cuenta.
+
+### Reconstrucción
+
+`recalculateRoomMetrics()` recuenta `/rooms` y reescribe el documento. Se
+invoca al sembrar habitaciones y cuando el dashboard encuentra el agregado
+ausente, lo que cubre el alta de un hotel nuevo desde el asistente de
+onboarding.
+
+### Lectura
+
+El dashboard lee este único documento en lugar de la colección completa de
+habitaciones, de modo que el costo de refrescarlo deja de crecer con el
+número de habitaciones del hotel.

@@ -32,6 +32,14 @@ class FakeRoomsRepository implements RoomsRepository {
   Future<void> createRoom(Room room) async {
     rooms.add(room);
   }
+
+  @override
+  Stream<RoomMetrics> watchRoomMetrics() =>
+      Stream.value(RoomMetrics.fromRooms(rooms));
+
+  @override
+  Future<RoomMetrics> recalculateRoomMetrics() async =>
+      RoomMetrics.fromRooms(rooms);
 }
 
 class FakeReservationsRepository implements ReservationsRepository {
